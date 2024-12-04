@@ -2,63 +2,63 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { motion } from "framer-motion";
 
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  image_url: string;
+}
+
 const ProductList: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
-  // Dummy Data for Categories
-  const dummyCategories = ["All", "Bread", "Cakes", "Pastries"];
-
-  // Dummy Data for Products
-  const dummyProducts = [
-    {
-      id: 1,
-      name: "Chocolate Cake",
-      category: "Cakes",
-      price: 20.0,
-      image_url:
-        "https://th.bing.com/th/id/OIP.IbwF8KtUTzAvpGQzoSzlQwHaKP?rs=1&pid=ImgDetMain",
-    },
-    {
-      id: 2,
-      name: "Croissant",
-      category: "Pastries",
-      price: 5.0,
-      image_url:
-        "https://th.bing.com/th/id/OIP.G6AChkGWMQ3TA6JBWQCl2wHaEY?rs=1&pid=ImgDetMain",
-    },
-    {
-      id: 3,
-      name: "Banana Bread",
-      category: "Bread",
-      price: 12.0,
-      image_url:
-        "https://i0.wp.com/tangledwithtaste.com/wp-content/uploads/2018/01/BananaBread5.jpg?resize=1100%2C1453&ssl=1",
-    },
-    {
-      id: 4,
-      name: "Strawberry Tart",
-      category: "Pastries",
-      price: 15.0,
-      image_url:
-        "https://th.bing.com/th/id/OIP.8vzPylMGuhjtX4g7nUKgRgHaE8?rs=1&pid=ImgDetMain",
-    },
-  ];
-
+  // Fetching categories from the backend
   useEffect(() => {
-    setCategories(dummyCategories);
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/categories");
+        const data = await response.json();
+
+        // Clean category names to remove extra spaces or characters
+        const cleanedCategories = data.map(
+          (category: string) => category.trim().replace(/['"]/g, "") // Remove single and double quotes
+        );
+
+        setCategories(["All", ...cleanedCategories]); // Add "All" as a default category
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
+  // Fetching products based on the selected category
   useEffect(() => {
-    const filteredProducts =
-      selectedCategory === "all"
-        ? dummyProducts
-        : dummyProducts.filter(
-            (product) => product.category.toLowerCase() === selectedCategory
-          );
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/products");
+        const data = await response.json();
 
-    setProducts(filteredProducts);
+        // Apply filter based on the selected category
+        const filteredProducts =
+          selectedCategory === "all"
+            ? data
+            : data.filter(
+                (product: Product) =>
+                  product.category.toLowerCase() ===
+                  selectedCategory.toLowerCase()
+              );
+        setProducts(filteredProducts);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
   }, [selectedCategory]);
 
   return (
@@ -70,11 +70,12 @@ const ProductList: React.FC = () => {
         {categories.map((category, index) => (
           <motion.button
             key={index}
-            onClick={() =>
+            onClick={() => {
+              // If the category is "All", set it to 'all', otherwise use category name
               setSelectedCategory(
                 category === "All" ? "all" : category.toLowerCase()
-              )
-            }
+              );
+            }}
             className={`px-4 py-2 rounded-lg font-semibold ${
               selectedCategory ===
               (category === "All" ? "all" : category.toLowerCase())
@@ -120,7 +121,6 @@ const ProductList: React.FC = () => {
                 <Button
                   variant="link"
                   color="yellow"
-                  // onClick={() => handleAddToCart(product.id, 1)}
                   className="text-gray-800 py-2 px-4 rounded-md transition duration-300 hover:bg-yellow-600"
                 >
                   <i className="fa-solid fa-cart-shopping"></i>
