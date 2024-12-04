@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
 import Recomended from "../components/Recomended";
+import Swal from "sweetalert2";
 
 interface Product {
   name: string;
@@ -31,7 +32,11 @@ const SingleProduct = () => {
 
   const handleAddToCart = () => {
     // Logic to add to cart
-    alert(`Added ${quantity} of ${product.name} to cart!`);
+    Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "Product has been added to cart!",
+    });
   };
 
   return (
