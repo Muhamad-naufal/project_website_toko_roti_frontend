@@ -56,6 +56,33 @@ app.get("/api/categories", (req, res) => {
   });
 });
 
+// const untuk mendapatkan produk berdasarkan ID
+const getProductById = (productId, callback) => {
+  const query = "SELECT * FROM products WHERE id = ?"; // Query to fetch the product by ID
+  db.query(query, [productId], (err, results) => {
+    if (err) {
+      console.error("Error fetching product:", err);
+      callback(err, null);
+    } else {
+      callback(null, results[0]); // Return the first result
+    }
+  });
+};
+
+// Endpoint untuk mendapatkan produk berdasarkan ID
+app.get("/api/products/:id", (req, res) => {
+  const productId = req.params.id;
+  getProductById(productId, (err, product) => {
+    if (err) {
+      res.status(500).json({ message: "Error fetching product" });
+    } else if (!product) {
+      res.status(404).json({ message: "Product not found" });
+    } else {
+      res.json(product); // Send product data as JSON
+    }
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 interface Product {
   id: number;
@@ -130,9 +131,9 @@ const ProductList: React.FC = () => {
                   color="yellow"
                   className="text-gray-800 py-2 px-4 rounded-md transition duration-300 hover:bg-yellow-600"
                 >
-                  <a href={`/singleProduct`}>
+                  <Link to={`/product/${product.id}`}>
                     <i className="fa-solid fa-eye"></i>
-                  </a>
+                  </Link>
                 </Button>
               </div>
             </motion.div>
