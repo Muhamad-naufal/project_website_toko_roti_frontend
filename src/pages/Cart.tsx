@@ -146,7 +146,7 @@ const Cart = () => {
                 <div>
                   <h2 className="text-xl font-semibold">{item.name}</h2>
                   <p className="text-gray-600">
-                    Price: {formatCurrency(item.price)}
+                    Harga: {formatCurrency(item.price)}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <button
@@ -193,18 +193,21 @@ const Cart = () => {
               </div>
 
               <div className="flex gap-2">
-                <p className="font-bold text-xl">
+                <p className="font-bold text-xl mt-2 me-4">
                   {formatCurrency(item.price * item.quantity)}
                 </p>
-                <button
+                <Button
+                  variant="outline"
+                  size="lg"
+                  color="red"
                   onClick={() => {
                     setItemToDelete(item.id);
                     setShowModal(true);
                   }}
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700 text-xl items-center p-5 rounded-lg"
                 >
-                  Remove
-                </button>
+                  <i className="fa-solid fa-trash"></i>
+                </Button>
               </div>
             </motion.div>
           ))

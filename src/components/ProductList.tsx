@@ -14,8 +14,13 @@ interface Product {
 
 const ProductList: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]); // Ensure initial state is an empty array
   const [categories, setCategories] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1); // Track current page
+  const [totalPages, setTotalPages] = useState<number>(1); // Track total pages
+
+  // Jumlah produk per halaman
+  const productsPerPage = 12;
 
   // Fetching categories from the backend
   useEffect(() => {
@@ -38,30 +43,35 @@ const ProductList: React.FC = () => {
     fetchCategories();
   }, []);
 
-  // Fetching products based on the selected category
+  // Fetching products based on the selected category and current page
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/products");
+        const response = await fetch(
+          `http://localhost:5000/api/products?page=${currentPage}&limit=${productsPerPage}&category=${selectedCategory}`
+        );
         const data = await response.json();
 
-        // Apply filter based on the selected category
         const filteredProducts =
-          selectedCategory === "all"
-            ? data
-            : data.filter(
+          Array.isArray(data.products) && selectedCategory === "all"
+            ? data.products
+            : Array.isArray(data.products)
+            ? data.products.filter(
                 (product: Product) =>
                   product.category.toLowerCase() ===
                   selectedCategory.toLowerCase()
-              );
+              )
+            : [];
+
         setProducts(filteredProducts);
+        setTotalPages(data.totalPages); // Update totalPages from the response
       } catch (error) {
         console.error("Error fetching products:", error);
       }
     };
 
     fetchProducts();
-  }, [selectedCategory]);
+  }, [selectedCategory, currentPage]);
 
   // Format the price to IDR currency
   const formatPrice = (amount: number) => {
@@ -73,7 +83,7 @@ const ProductList: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Produk Kami</h1>
+      <h1 className="text-3xl font-bold mb-6 mt-4 text-center">Produk Kami</h1>
 
       {/* Category Selection */}
       <div className="flex space-x-4 mb-6">
@@ -186,6 +196,28 @@ const ProductList: React.FC = () => {
           </p>
         )}
       </motion.div>
+      {/* Pagination Controls */}
+      <div className="flex justify-center space-x-4 mt-6">
+        <Button
+          variant="link"
+          color="yellow"
+          className="px-4 py-2 rounded-lg"
+          onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        <span className="text-xl">{`Page ${currentPage} of ${totalPages}`}</span>
+        <Button
+          variant="link"
+          color="yellow"
+          className="px-4 py-2 rounded-lg"
+          onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 };

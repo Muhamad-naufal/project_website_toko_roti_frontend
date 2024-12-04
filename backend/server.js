@@ -37,14 +37,47 @@ console.log("Connected to the database");
 
 // Endpoint untuk mendapatkan produk
 app.get("/api/products", (req, res) => {
-  const query = "SELECT * FROM products";
-  db.query(query, (err, results) => {
+  // Extract the page, limit, and category from the query parameters
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 12;
+  const category = req.query.category || "all";
+  const offset = (page - 1) * limit;
+
+  // Create the base query for filtering by category if necessary
+  let query = "SELECT * FROM products";
+  let countQuery = "SELECT COUNT(*) AS totalProducts FROM products";
+
+  if (category !== "all") {
+    query += ` WHERE category = '${category}'`;
+    countQuery += ` WHERE category = '${category}'`;
+  }
+
+  // Query to fetch the products with pagination and filtering by category
+  db.query(query + ` LIMIT ${limit} OFFSET ${offset}`, (err, results) => {
     if (err) {
       console.error(err);
-      res.status(500).json({ message: "Error fetching products" });
-    } else {
-      res.json(results);
+      return res.status(500).json({ message: "Error fetching products" });
     }
+
+    // Query to get the total number of products for the filtered category
+    db.query(countQuery, (err, countResult) => {
+      if (err) {
+        console.error(err);
+        return res
+          .status(500)
+          .json({ message: "Error fetching total product count" });
+      }
+
+      const totalProducts = countResult[0].totalProducts;
+      const totalPages = Math.ceil(totalProducts / limit);
+
+      // Respond with the filtered products and the total count for pagination
+      res.json({
+        products: results,
+        totalProducts: totalProducts,
+        totalPages: totalPages,
+      });
+    });
   });
 });
 
