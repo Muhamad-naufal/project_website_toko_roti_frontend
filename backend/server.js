@@ -3,13 +3,28 @@ import cors from "cors";
 import mysql from "mysql2";
 import bcrypt from "bcrypt";
 import User from "./models/user.js";
+import cookieParser from "cookie-parser";
+import bodyParser from "body-parser";
 
 const app = express();
 const PORT = 5000;
 
-// Middleware
-app.use(cors());
+// Middleware untuk membaca JSON body
 app.use(express.json());
+
+// Middleware untuk mengizinkan CORS
+app.use(cookieParser()); // Middleware untuk parsing cookies
+app.use(cors({ origin: "http://localhost:5173", credentials: true })); // Pastikan credentials diizinkan
+app.use(bodyParser.json());
+
+// Konfigurasi CORS
+const corsOptions = {
+  origin: "http://localhost:5173", // Ganti dengan origin frontend Anda
+  credentials: true, // Mengizinkan pengiriman cookies
+  optionsSuccessStatus: 200, // Status untuk permintaan preflight yang berhasil
+};
+
+app.use(cors(corsOptions));
 
 // Koneksi ke database
 const db = mysql.createConnection({
@@ -146,6 +161,82 @@ app.post("/api/login", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Terjadi kesalahan pada server" });
+  }
+});
+
+// Endpoint untuk menambahkan produk ke keranjang
+app.post("/api/cart/add", async (req, res) => {
+  const { productId, quantity } = req.body;
+  const userId = req.cookies.user_id; // Mengambil user_id dari cookies
+
+  console.log("Cookies di backend:", req.cookies); // Debug semua cookies yang diterima
+  console.log("User ID dari cookies:", userId); // Debug nilai user_id
+
+  if (!userId) {
+    return res.status(401).json({ message: "User tidak ditemukan." });
+  }
+
+  try {
+    db.query(
+      "SELECT id FROM carts WHERE user_id = ?",
+      [userId],
+      (err, results) => {
+        if (err) throw err;
+
+        let cartId;
+        if (results.length > 0) {
+          cartId = results[0].id;
+          addItemToCart(cartId, productId, quantity);
+        } else {
+          db.query(
+            "INSERT INTO carts (user_id) VALUES (?)",
+            [userId],
+            (err, result) => {
+              if (err) throw err;
+              cartId = result.insertId;
+              addItemToCart(cartId, productId, quantity);
+            }
+          );
+        }
+      }
+    );
+
+    const addItemToCart = (cartId, productId, quantity) => {
+      db.query(
+        "SELECT * FROM cart_items WHERE cart_id = ? AND product_id = ?",
+        [cartId, productId],
+        (err, results) => {
+          if (err) throw err;
+
+          if (results.length > 0) {
+            db.query(
+              "UPDATE cart_items SET quantity = quantity + ? WHERE cart_id = ? AND product_id = ?",
+              [quantity, cartId, productId],
+              (err) => {
+                if (err) throw err;
+                return res.status(200).json({
+                  message: "Produk berhasil diperbarui di keranjang.",
+                });
+              }
+            );
+          } else {
+            db.query(
+              "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)",
+              [cartId, productId, quantity],
+              (err) => {
+                if (err) throw err;
+                return res.status(201).json({
+                  message: "Produk berhasil ditambahkan ke keranjang.",
+                });
+              }
+            );
+          }
+        }
+      );
+    };
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Terjadi kesalahan pada server." });
   }
 });
 

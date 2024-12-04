@@ -1,32 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
+import axios from "axios";
 
 const Cart = () => {
-  // Dummy cart items data
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Chocolate Cake",
-      price: 12.99,
-      quantity: 2,
-      image:
-        "https://th.bing.com/th/id/OIP.IbwF8KtUTzAvpGQzoSzlQwHaKP?rs=1&pid=ImgDetMain",
-    },
-    {
-      id: 2,
-      name: "Vanilla Cupcake",
-      price: 8.99,
-      quantity: 1,
-      image:
-        "https://th.bing.com/th/id/OIP.W_BxXuZhfdyxp4XPzDOF-QHaLH?rs=1&pid=ImgDetMain",
-    },
-  ]);
-
+  const [cartItems, setCartItems] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const totalPrice = cartItems.reduce(
+  // Fallback to empty array if cartItems is undefined
+  const totalPrice = (cartItems || []).reduce(
     (total, item) => total + item.price * item.quantity,
     0
   );
@@ -47,6 +31,34 @@ const Cart = () => {
   const removeFromCart = (itemId: number) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
   };
+
+  // Fetch cart items from the server based on user_id from cookies
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const userId = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("user_id="))
+          ?.split("=")[1];
+        if (userId) {
+          const response = await axios.get(`/api/cart/${userId}`);
+          setCartItems(response.data.cartItems || []); // Ensure it's an array
+        } else {
+          console.error("User ID not found in cookies");
+        }
+      } catch (error) {
+        console.error("Error fetching cart items:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCartItems();
+  }, []);
+
+  if (loading) {
+    return <p>Loading your cart...</p>;
+  }
 
   return (
     <div className="container mx-auto p-4">

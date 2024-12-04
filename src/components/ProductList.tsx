@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
 
 interface Product {
   id: number;
@@ -123,9 +124,42 @@ const ProductList: React.FC = () => {
                   variant="link"
                   color="yellow"
                   className="text-gray-800 py-2 px-4 rounded-md transition duration-300 hover:bg-yellow-600"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(
+                        "http://localhost:5000/api/cart/add",
+                        {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          credentials: "include", // Untuk mengirim cookies
+                          body: JSON.stringify({
+                            productId: product.id,
+                            quantity: 1, // Default quantity
+                          }),
+                        }
+                      );
+
+                      if (response.ok) {
+                        Swal.fire({
+                          icon: "success",
+                          title: "Success",
+                          text: "Produk berhasil ditambahkan ke keranjang.",
+                          showConfirmButton: false,
+                          timer: 1500,
+                        });
+                      } else {
+                        alert("Gagal menambahkan produk ke keranjang.");
+                      }
+                    } catch (error) {
+                      console.error("Error:", error);
+                    }
+                  }}
                 >
                   <i className="fa-solid fa-cart-shopping"></i>
                 </Button>
+
                 <Button
                   variant="link"
                   color="yellow"

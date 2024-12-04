@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { Button } from "../components/ui/button";
 import { motion } from "framer-motion";
+import Recomended from "../components/Recomended";
 
 interface Product {
   id: number;
@@ -44,14 +45,6 @@ const SingleProduct: React.FC = () => {
 
   const handleDecreaseQuantity = () => {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-  };
-
-  const handleAddToCart = () => {
-    Swal.fire({
-      icon: "success",
-      title: "Success",
-      text: "Product has been added to cart!",
-    });
   };
 
   return (
@@ -114,7 +107,38 @@ const SingleProduct: React.FC = () => {
               <Button
                 variant="default"
                 className="w-full md:w-auto"
-                onClick={handleAddToCart}
+                onClick={async () => {
+                  try {
+                    const response = await fetch(
+                      "http://localhost:5000/api/cart/add",
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        credentials: "include", // Untuk mengirim cookies
+                        body: JSON.stringify({
+                          productId: product.id,
+                          quantity: 1, // Default quantity
+                        }),
+                      }
+                    );
+
+                    if (response.ok) {
+                      Swal.fire({
+                        icon: "success",
+                        title: "Success",
+                        text: "Produk berhasil ditambahkan ke keranjang.",
+                        showConfirmButton: false,
+                        timer: 1500,
+                      });
+                    } else {
+                      alert("Gagal menambahkan produk ke keranjang.");
+                    }
+                  } catch (error) {
+                    console.error("Error:", error);
+                  }
+                }}
               >
                 Add to Cart
               </Button>
@@ -124,6 +148,7 @@ const SingleProduct: React.FC = () => {
       ) : (
         <p>Loading product...</p>
       )}
+      <Recomended />
     </div>
   );
 };
