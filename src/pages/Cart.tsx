@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
-import axios from "axios";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
@@ -9,56 +8,117 @@ const Cart = () => {
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fallback to empty array if cartItems is undefined
+  interface CartItem {
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+    image_url: string;
+  }
+
+  // Helper function to format price into IDR currency format
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+    }).format(amount);
+  };
+
+  // Calculate total price in IDR
   const totalPrice = (cartItems || []).reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total: number, item: CartItem) => total + item.price * item.quantity,
     0
   );
 
   const updateQuantity = (itemId: number, increment: boolean) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
+    // Update cartItems state
+    setCartItems((prevItems) => {
+      const updatedItems = prevItems.map((item) =>
         item.id === itemId
           ? {
               ...item,
-              quantity: increment ? item.quantity + 1 : item.quantity - 1,
+              quantity: increment
+                ? item.quantity + 1
+                : item.quantity > 1
+                ? item.quantity - 1
+                : item.quantity, // Prevent quantity from going below 1
             }
           : item
-      )
-    );
+      );
+
+      // Find the updated item
+      const updatedItem = updatedItems.find((item) => item.id === itemId);
+      if (updatedItem) {
+        fetch(`http://localhost:5000/api/cart/${updatedItem.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ quantity: updatedItem.quantity }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Failed to update quantity");
+            }
+          })
+          .catch((error) => {
+            console.error("Error updating quantity:", error);
+          });
+      }
+
+      return updatedItems;
+    });
   };
 
-  const removeFromCart = (itemId: number) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+  const removeFromCart = async (itemId: number) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/cart/${itemId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to remove item from cart");
+      }
+
+      // Update the cartItems state to remove the deleted item
+      setCartItems((prevItems) =>
+        prevItems.filter((item) => item.id !== itemId)
+      );
+      setShowModal(false); // Close the modal after item removal
+    } catch (error) {
+      console.error("Error removing item from cart:", error);
+    }
   };
 
   // Fetch cart items from the server based on user_id from cookies
   useEffect(() => {
     const fetchCartItems = async () => {
+      setLoading(true); // Set loading to true when starting the fetch
       try {
-        const userId = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("user_id="))
-          ?.split("=")[1];
-        if (userId) {
-          const response = await axios.get(`/api/cart/${userId}`);
-          setCartItems(response.data.cartItems || []); // Ensure it's an array
-        } else {
-          console.error("User ID not found in cookies");
+        const response = await fetch("http://localhost:5000/api/cart", {
+          method: "GET",
+          credentials: "include", // Ensure cookies are sent with the request
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch cart items");
         }
+
+        const data = await response.json();
+        setCartItems(data); // Update state with fetched data
       } catch (error) {
         console.error("Error fetching cart items:", error);
+        setCartItems([]); // Set to an empty array in case of error
       } finally {
-        setLoading(false);
+        setLoading(false); // Set loading to false once data is fetched
       }
     };
 
     fetchCartItems();
   }, []);
-
-  if (loading) {
-    return <p>Loading your cart...</p>;
-  }
 
   return (
     <div className="container mx-auto p-4">
@@ -79,14 +139,14 @@ const Cart = () => {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={item.image}
+                  src={item.image_url}
                   alt={item.name}
                   className="w-20 h-20 rounded-md object-cover"
                 />
                 <div>
                   <h2 className="text-xl font-semibold">{item.name}</h2>
                   <p className="text-gray-600">
-                    Price: ${item.price.toFixed(2)}
+                    Price: {formatCurrency(item.price)}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <button
@@ -134,7 +194,7 @@ const Cart = () => {
 
               <div className="flex gap-2">
                 <p className="font-bold text-xl">
-                  ${item.price * item.quantity}
+                  {formatCurrency(item.price * item.quantity)}
                 </p>
                 <button
                   onClick={() => {
@@ -149,12 +209,26 @@ const Cart = () => {
             </motion.div>
           ))
         ) : (
-          <p>Your cart is empty.</p>
+          <div className="text-center py-10">
+            <h2 className="text-2xl font-semibold mb-4">
+              Keranjang belanja kamu kosong
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Ayo tambahkan roti favoritmu ke keranjang!
+            </p>
+            <Button
+              variant="default"
+              className="hover:bg-gray-800"
+              onClick={() => (window.location.href = "/")}
+            >
+              Belanja Sekarang
+            </Button>
+          </div>
         )}
 
         <div className="flex justify-between items-center mt-4">
           <h2 className="text-2xl font-bold">
-            Total: ${totalPrice.toFixed(2)}
+            Total: {formatCurrency(totalPrice)}
           </h2>
           <Button variant="default" className="hover:bg-gray-800">
             Checkout
@@ -170,8 +244,9 @@ const Cart = () => {
             <div className="mt-4 flex justify-between">
               <button
                 onClick={() => {
-                  removeFromCart(itemToDelete as number);
-                  setShowModal(false);
+                  if (itemToDelete !== null) {
+                    removeFromCart(itemToDelete); // Remove the item
+                  }
                 }}
                 className="bg-red-500 text-white px-4 py-2 rounded"
               >

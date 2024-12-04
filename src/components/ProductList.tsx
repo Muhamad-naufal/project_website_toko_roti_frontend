@@ -63,6 +63,14 @@ const ProductList: React.FC = () => {
     fetchProducts();
   }, [selectedCategory]);
 
+  // Format the price to IDR currency
+  const formatPrice = (amount: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+    }).format(amount);
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Produk Kami</h1>
@@ -116,7 +124,7 @@ const ProductList: React.FC = () => {
               <h2 className="text-xl font-semibold">{product.name}</h2>
               <p className="text-gray-600">{product.category}</p>
               <p className="text-lg font-bold text-yellow-500">
-                ${product.price}
+                {formatPrice(product.price)}
               </p>
 
               <div className="relative flex">

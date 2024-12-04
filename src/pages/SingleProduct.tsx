@@ -116,10 +116,10 @@ const SingleProduct: React.FC = () => {
                         headers: {
                           "Content-Type": "application/json",
                         },
-                        credentials: "include", // Untuk mengirim cookies
+                        credentials: "include", // To send cookies
                         body: JSON.stringify({
                           productId: product.id,
-                          quantity: 1, // Default quantity
+                          quantity: quantity, // Send the selected quantity
                         }),
                       }
                     );

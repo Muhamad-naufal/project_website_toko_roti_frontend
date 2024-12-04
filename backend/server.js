@@ -33,15 +33,7 @@ const db = mysql.createConnection({
   password: "",
   database: "toko_roti",
 });
-
-// Cek koneksi
-db.connect((err) => {
-  if (err) {
-    console.error("Error connecting to database:", err);
-  } else {
-    console.log("Connected to the database!");
-  }
-});
+console.log("Connected to the database");
 
 // Endpoint untuk mendapatkan produk
 app.get("/api/products", (req, res) => {
@@ -238,6 +230,77 @@ app.post("/api/cart/add", async (req, res) => {
     console.error("Error:", error);
     res.status(500).json({ message: "Terjadi kesalahan pada server." });
   }
+});
+
+// Endpoint untuk mendapatkan cart
+app.get("/api/cart", (req, res) => {
+  const userId = req.cookies.user_id; // Get user_id from cookies
+  console.log("Cookies in backend:", req.cookies); // Debugging cookies
+  console.log("User ID from cookies:", userId); // Debugging user_id
+
+  if (!userId) {
+    return res.status(401).json({ message: "User not found." });
+  }
+
+  const query = `SELECT carts.*, cart_items.*, products.name, products.price, products.image_url 
+                 FROM carts 
+                 JOIN cart_items ON carts.id = cart_items.cart_id 
+                 JOIN products ON cart_items.product_id = products.id 
+                 WHERE user_id = ${userId}`;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error fetching cart" });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// Endpoint untuk memperbarui quantity item di cart menggunakan PUT
+app.put("/api/cart/:itemId", (req, res) => {
+  const itemId = req.params.itemId;
+  const { quantity } = req.body;
+
+  if (!quantity || quantity <= 0) {
+    return res.status(400).json({ message: "Invalid quantity" });
+  }
+
+  const query = "UPDATE cart_items SET quantity = ? WHERE id = ?";
+  db.query(query, [quantity, itemId], (err, result) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ message: "Failed to update quantity", error: err });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json({ message: "Quantity updated successfully" });
+  });
+});
+
+// Endpoint untuk menghapus item dari cart menggunakan DELETE
+app.delete("/api/cart/:itemId", (req, res) => {
+  const itemId = req.params.itemId;
+
+  const query = "DELETE FROM cart_items WHERE id = ?";
+  db.query(query, [itemId], (err, result) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ message: "Failed to delete item", error: err });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json({ message: "Item deleted successfully" });
+  });
 });
 
 // Start server
