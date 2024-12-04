@@ -9,9 +9,42 @@ const Register = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.message);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("User ID:", data.userId); // Log the user ID
+
+      Swal.fire("Berhasil", "Anda berhasil Mendaftar!", "success");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during registration:", error);
+      setError("Terjadi kesalahan. Coba lagi.");
+      Swal.fire("Gagal", "Terjadi kesalahan. Coba lagi.", "error");
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -24,7 +57,7 @@ const Register = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl font-bold mb-6 text-center">Register</h2>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label
                 htmlFor="name"
@@ -83,18 +116,8 @@ const Register = () => {
               type="submit"
               className="w-full bg-blue-500 text-white py-2 rounded-md"
               disabled={loading}
-              onClick={(e) => {
-                e.preventDefault();
-                setLoading(true);
-                // Simulate login process
-                setTimeout(() => {
-                  setLoading(false);
-                  Swal.fire("Berhasil", "Anda berhasil Mendaftar!", "success");
-                  navigate("/login");
-                }, 2000);
-              }}
             >
-              {loading ? "Memuat..." : "Masuk"}
+              {loading ? "Memuat..." : "Daftar"}
             </Button>
           </form>
         </motion.div>

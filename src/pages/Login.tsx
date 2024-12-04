@@ -1,10 +1,10 @@
-"use client";
-
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import Cookies from "js-cookie";
+// Pastikan kamu sudah menginstal js-cookie
 
 const Login = () => {
   const [email, setEmail] = useState<string>("");
@@ -12,6 +12,45 @@ const Login = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        // Jika login berhasil, simpan ID user ke dalam cookie
+        Cookies.set("user_id", data.user_id, { expires: 7 }); // Cookie diset selama 7 hari
+        console.log("User ID:", data.user_id); // Menampilkan user_id di console
+        Swal.fire({
+          title: "Berhasil",
+          text: "Anda berhasil masuk!",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          navigate("/"); // Redirect ke halaman utama
+          // refresh halaman agar navbar menampilkan menu logout
+          window.location.reload();
+        });
+      } else {
+        Swal.fire("Gagal", data.message, "error");
+      }
+    } catch (error) {
+      console.error("Error login:", error);
+      Swal.fire("Gagal", "Terjadi kesalahan pada server", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -44,7 +83,7 @@ const Login = () => {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-          <form>
+          <form onSubmit={handleLogin}>
             <div className="mb-4">
               <label
                 htmlFor="email"
@@ -83,16 +122,6 @@ const Login = () => {
               type="submit"
               className="w-full bg-blue-500 text-white py-2 rounded-md"
               disabled={loading}
-              onClick={(e) => {
-                e.preventDefault();
-                setLoading(true);
-                // Simulate login process
-                setTimeout(() => {
-                  setLoading(false);
-                  Swal.fire("Berhasil", "Anda berhasil masuk!", "success");
-                  navigate("/");
-                }, 2000);
-              }}
             >
               {loading ? "Memuat..." : "Masuk"}
             </Button>
