@@ -1,34 +1,78 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import Header from "./components/Header";
+import Sidebar from "./components/Sidebar";
+import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
+import Produk from "./pages/Produk";
+import Orderan from "./pages/Orderan";
+import Login from "./pages/Login";
 
-function App() {
-  const [count, setCount] = useState(0);
+export default function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Router>
+      <AppWithSidebarHeader
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+      />
+    </Router>
   );
 }
 
-export default App;
+// This component contains the logic for conditional Sidebar/Header rendering
+function AppWithSidebarHeader({
+  isSidebarOpen,
+  toggleSidebar,
+}: {
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
+}) {
+  const location = useLocation(); // Now inside Router context
+
+  return (
+    <div className="flex h-screen w-full">
+      {/* Conditionally render Sidebar and Header based on the current route */}
+      {location.pathname !== "/login" && (
+        <>
+          {/* Sidebar (Desktop and Mobile) */}
+          <div className="hidden md:block">
+            <Sidebar isSidebarOpen={isSidebarOpen} />
+          </div>
+          <div className="block md:hidden">
+            {isSidebarOpen && <Sidebar isSidebarOpen={isSidebarOpen} />}
+          </div>
+
+          {/* Header */}
+          <div className="flex-1 flex flex-col">
+            <Header onToggleSidebar={toggleSidebar} />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/produk" element={<Produk />} />
+              <Route path="/orderan" element={<Orderan />} />
+              {/* Login route without sidebar and header */}
+            </Routes>
+          </div>
+        </>
+      )}
+      {location.pathname === "/login" && (
+        <div className="w-full">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,8 @@
+perbaikan front end user
+1. urutkan produk menurut yang terbaru
+2. buat autentikasi untuk register untuk password harus ada huruf besar, 8 karakter, ada angkanya
+3. buat autentikasi untuk login untuk password membaca besar atau kecil hurufnya
+
+perbaikan front end admin
+1. buat tampilan add produk
+2. buat tampilan edit produk
