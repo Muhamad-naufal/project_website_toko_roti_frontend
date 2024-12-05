@@ -202,27 +202,50 @@ app.post("/api/cart/add", async (req, res) => {
   }
 
   try {
+    // Cek apakah produk tersedia
     db.query(
-      "SELECT id FROM carts WHERE user_id = ?",
-      [userId],
+      "SELECT stock FROM products WHERE id = ?",
+      [productId],
       (err, results) => {
         if (err) throw err;
 
-        let cartId;
-        if (results.length > 0) {
-          cartId = results[0].id;
-          addItemToCart(cartId, productId, quantity);
-        } else {
-          db.query(
-            "INSERT INTO carts (user_id) VALUES (?)",
-            [userId],
-            (err, result) => {
-              if (err) throw err;
-              cartId = result.insertId;
-              addItemToCart(cartId, productId, quantity);
-            }
-          );
+        if (results.length === 0) {
+          return res.status(404).json({ message: "Produk tidak ditemukan." });
         }
+
+        const currentStock = results[0].stock;
+
+        // Pastikan stok mencukupi, tanpa mengurangi stok
+        if (currentStock < quantity) {
+          return res
+            .status(400)
+            .json({ message: "Stok tidak mencukupi untuk produk ini." });
+        }
+
+        // Lanjutkan proses menambahkan ke keranjang
+        db.query(
+          "SELECT id FROM carts WHERE user_id = ?",
+          [userId],
+          (err, results) => {
+            if (err) throw err;
+
+            let cartId;
+            if (results.length > 0) {
+              cartId = results[0].id;
+              addItemToCart(cartId, productId, quantity);
+            } else {
+              db.query(
+                "INSERT INTO carts (user_id) VALUES (?)",
+                [userId],
+                (err, result) => {
+                  if (err) throw err;
+                  cartId = result.insertId;
+                  addItemToCart(cartId, productId, quantity);
+                }
+              );
+            }
+          }
+        );
       }
     );
 
@@ -239,6 +262,7 @@ app.post("/api/cart/add", async (req, res) => {
               [quantity, cartId, productId],
               (err) => {
                 if (err) throw err;
+
                 return res.status(200).json({
                   message: "Produk berhasil diperbarui di keranjang.",
                 });
@@ -250,6 +274,7 @@ app.post("/api/cart/add", async (req, res) => {
               [cartId, productId, quantity],
               (err) => {
                 if (err) throw err;
+
                 return res.status(201).json({
                   message: "Produk berhasil ditambahkan ke keranjang.",
                 });

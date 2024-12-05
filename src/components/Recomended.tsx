@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";

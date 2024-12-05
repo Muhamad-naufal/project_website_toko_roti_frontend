@@ -47,6 +47,14 @@ const SingleProduct: React.FC = () => {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
   };
 
+  // Format the price to IDR currency
+  const formatPrice = (amount: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+    }).format(amount);
+  };
+
   return (
     <div className="container mx-auto p-4">
       {product ? (
@@ -80,7 +88,7 @@ const SingleProduct: React.FC = () => {
             <h1 className="text-3xl font-bold">{product.name}</h1>
             <p className="text-gray-600">{product.description}</p>
             <p className="text-xl font-semibold text-yellow-500">
-              ${product.price}
+              {formatPrice(product.price)}
             </p>
 
             {/* Quantity Selector */}
