@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Produk from "./pages/Produk";
 import Orderan from "./pages/Orderan";
 import Login from "./pages/Login";
+import AddProduct from "./pages/AddProduct";
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -41,15 +42,15 @@ function AppWithSidebarHeader({
   const location = useLocation(); // Now inside Router context
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-full w-full">
       {/* Conditionally render Sidebar and Header based on the current route */}
       {location.pathname !== "/login" && (
         <>
           {/* Sidebar (Desktop and Mobile) */}
-          <div className="hidden md:block">
+          <div className="hidden md:block h-full">
             <Sidebar isSidebarOpen={isSidebarOpen} />
           </div>
-          <div className="block md:hidden">
+          <div className="block md:hidden h-full">
             {isSidebarOpen && <Sidebar isSidebarOpen={isSidebarOpen} />}
           </div>
 
@@ -61,7 +62,7 @@ function AppWithSidebarHeader({
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/produk" element={<Produk />} />
               <Route path="/orderan" element={<Orderan />} />
-              {/* Login route without sidebar and header */}
+              <Route path="/add-product" element={<AddProduct />} />
             </Routes>
           </div>
         </>

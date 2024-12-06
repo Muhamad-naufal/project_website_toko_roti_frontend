@@ -44,7 +44,9 @@ const Produk = () => {
           animate={{ scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <FaPlus className="text-xl" />
+          <a href="/add-product">
+            <FaPlus className="text-xl" />
+          </a>
         </motion.button>
       </motion.div>
 
