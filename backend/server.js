@@ -5,6 +5,8 @@ import bcrypt from "bcrypt";
 import User from "./models/user.js";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
+import multer from "multer";
+import path from "path";
 
 const app = express();
 const PORT = 5000;
@@ -16,10 +18,17 @@ app.use(express.json());
 app.use(cookieParser()); // Middleware untuk parsing cookies
 app.use(cors({ origin: "http://localhost:5173", credentials: true })); // Pastikan credentials diizinkan
 app.use(bodyParser.json());
+app.use(express.json()); // Untuk menangani data JSON
+app.use(express.urlencoded({ extended: true })); // Untuk menangani data URL-encoded
+app.use("/uploads", express.static("uploads"));
 
 // Konfigurasi CORS
 const corsOptions = {
-  origin: "http://localhost:5173", // Ganti dengan origin frontend Anda
+  origin: [
+    "http://localhost:5175",
+    "http://localhost:5173",
+    "http://localhost:5174",
+  ], // Ganti dengan origin frontend Anda
   credentials: true, // Mengizinkan pengiriman cookies
   optionsSuccessStatus: 200, // Status untuk permintaan preflight yang berhasil
 };
@@ -33,6 +42,7 @@ const db = mysql.createConnection({
   password: "",
   database: "toko_roti",
 });
+
 console.log("Connected to the database");
 
 // Endpoint untuk mendapatkan produk
@@ -422,6 +432,40 @@ app.get("/api/sales/count", (req, res) => {
     const totalSales = results[0].total_sales || 0; // Jika null atau undefined, set ke 0
     res.json({ total_sales: totalSales });
   });
+});
+
+// Endpoint untuk menambahkan produk ke database
+const storage = multer.diskStorage({
+  destination: (_, __, cb) => {
+    cb(null, "uploads/"); // Gambar disimpan di folder 'uploads'
+  },
+  filename: (_, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Menambahkan timestamp untuk nama file
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Endpoint untuk menambahkan produk dengan gambar
+app.post("/api/products/add", upload.single("image"), (req, res) => {
+  console.log(req.body); // Untuk debugging
+  const { name, description, price, stock, category } = req.body;
+  const image = req.file ? req.file.filename : null; // Mendapatkan nama file gambar
+
+  if (!name || !description || !price || !stock || !category || !image) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  const sql =
+    "INSERT INTO products (name, description, price, stock, category, image_url) VALUES (?, ?, ?, ?, ?, ?)";
+  db.query(
+    sql,
+    [name, description, price, stock, category, `/uploads/${image}`], // Menyimpan path gambar
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, id: results.insertId });
+    }
+  );
 });
 
 // Start server

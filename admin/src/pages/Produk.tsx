@@ -9,7 +9,7 @@ const Produk = () => {
     category: string;
     description: string;
     price: number;
-    stok: number;
+    stock: number;
   }
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -90,7 +90,7 @@ const Produk = () => {
                     currency: "IDR",
                   }).format(product.price)}
                 </td>
-                <td className="p-4">{product.stok}</td>
+                <td className="p-4">{product.stock}</td>
                 <td className="p-4">
                   <div className="flex gap-2">
                     <motion.button

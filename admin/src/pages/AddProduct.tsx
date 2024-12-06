@@ -1,17 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import axios from "axios";
 
 const AddProduct = () => {
   const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const categories = ["Bread", "Cake", "Pastry", "Cookies"]; // Example categories
+  const [preview, setPreview] = useState<string | null>(null); // Preview image state
+  const [categories, setCategories] = useState<string[]>([]);
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    stock: "",
+    category: "",
+    image: null as File | null, // Untuk menyimpan file gambar
+  });
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/categories");
+        const data = await response.json();
+        const cleanedCategories = data.map((category: string) =>
+          category.trim().replace(/['"]/g, "")
+        );
+        setCategories(cleanedCategories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Fungsi untuk meng-handle upload gambar dan menampilkan preview
   const handleImageUpload = (file: File) => {
     if (file) {
-      setImage(file);
+      setImage(file); // Update file image
       const reader = new FileReader();
-      reader.onload = () => setPreview(reader.result as string);
-      reader.readAsDataURL(file);
+      reader.onloadend = () => {
+        setPreview(reader.result as string); // Set preview image
+      };
+      reader.readAsDataURL(file); // Convert file to data URL
     }
   };
 
@@ -23,12 +52,53 @@ const AddProduct = () => {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0]; // Get the first file dropped
-    if (file) handleImageUpload(file);
+    if (file) handleImageUpload(file); // Upload the image
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleImageUpload(file);
+    const file = e.target.files?.[0]; // Get the file from input
+    if (file) handleImageUpload(file); // Upload the image
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("description", form.description);
+      formData.append("price", form.price);
+      formData.append("stock", form.stock);
+      formData.append("category", form.category);
+      if (image) {
+        formData.append("image", image); // Append the image to formData
+      }
+
+      const response = await axios.post(
+        "http://localhost:5000/api/products/add",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      if (response.data.success) {
+        alert("Product added successfully!");
+      } else {
+        alert("Failed to add product.");
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+      alert("An error occurred. Please try again.");
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setForm((prevForm) => ({ ...prevForm, [name]: value }));
   };
 
   return (
@@ -39,7 +109,7 @@ const AddProduct = () => {
       transition={{ duration: 0.5 }}
     >
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Add New Product</h2>
-      <form className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {/* Image Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -53,6 +123,7 @@ const AddProduct = () => {
             <input
               type="file"
               accept="image/*"
+              name="image"
               onChange={handleFileInput}
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
@@ -100,6 +171,9 @@ const AddProduct = () => {
           </label>
           <input
             type="text"
+            value={form.name}
+            name="name"
+            onChange={handleChange}
             placeholder="Enter product name"
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           />
@@ -111,8 +185,11 @@ const AddProduct = () => {
             Product Description
           </label>
           <textarea
+            name="description"
+            value={form.description}
             placeholder="Describe the ingredients and taste to attract customers"
             rows={4}
+            onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           ></textarea>
         </div>
@@ -125,6 +202,9 @@ const AddProduct = () => {
             </label>
             <input
               type="number"
+              value={form.price}
+              onChange={handleChange}
+              name="price"
               placeholder="Enter price"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
@@ -135,6 +215,9 @@ const AddProduct = () => {
             </label>
             <input
               type="number"
+              name="stock"
+              value={form.stock}
+              onChange={handleChange}
               placeholder="Enter stock quantity"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
@@ -146,10 +229,15 @@ const AddProduct = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Category
           </label>
-          <select className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
-            <option value="">Select Category</option>
-            {categories.map((category, index) => (
-              <option key={index} value={category}>
+          <select
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
+          >
+            <option value="">Plih Kategori</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
                 {category}
               </option>
             ))}
@@ -160,7 +248,7 @@ const AddProduct = () => {
         <div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300"
+            className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300"
           >
             Add Product
           </button>

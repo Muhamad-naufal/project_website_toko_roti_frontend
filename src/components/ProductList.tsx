@@ -160,12 +160,16 @@ const ProductList: React.FC = () => {
               </div>
 
               <img
-                src={product.image_url}
+                src={`../../backend${product.image_url}`}
                 alt={product.name}
                 className={`w-full h-40 object-cover rounded-lg mb-4 ${
                   product.stock <= 0 ? "opacity-50" : ""
                 }`}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
               />
+
               <h2 className="text-xl font-semibold">{product.name}</h2>
               <p className="text-gray-600">{product.category}</p>
               <p className="text-lg font-bold text-yellow-500">
