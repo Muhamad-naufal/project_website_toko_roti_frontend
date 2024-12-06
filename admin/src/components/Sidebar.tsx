@@ -16,12 +16,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
 
   return (
     <motion.div
-      className={`bg-gradient-to-b from-blue-800 to-indigo-900 text-white shadow-lg h-screen flex flex-col ${
+      className={`bg-gradient-to-b from-blue-800 h-screen to-indigo-900 text-white shadow-lg flex flex-col ${
         isSidebarOpen ? "w-64" : "w-20"
       }`}
       initial={{ width: 0 }}
       animate={{ width: isSidebarOpen ? 256 : 80 }}
       transition={{ duration: 0.4 }}
+      style={{ flex: 1 }} // Sidebar mengikuti tinggi kontainer induk
     >
       {/* Logo Section */}
       <div className="flex items-center justify-center py-6">

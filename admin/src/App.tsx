@@ -23,51 +23,44 @@ export default function App() {
 
   return (
     <Router>
-      <AppWithSidebarHeader
-        isSidebarOpen={isSidebarOpen}
-        toggleSidebar={toggleSidebar}
-      />
+      <MainLayout isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
     </Router>
   );
 }
 
-// This component contains the logic for conditional Sidebar/Header rendering
-function AppWithSidebarHeader({
+// Main Layout Component
+function MainLayout({
   isSidebarOpen,
   toggleSidebar,
 }: {
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
 }) {
-  const location = useLocation(); // Now inside Router context
+  const location = useLocation();
+
+  // Check if the current route is "/login"
+  const isLoginPage = location.pathname === "/login";
 
   return (
-    <div className="flex h-full w-full">
-      {/* Conditionally render Sidebar and Header based on the current route */}
-      {location.pathname !== "/login" && (
+    <div className="flex h-screen">
+      {/* Render Sidebar and Header only if not on the Login page */}
+      {!isLoginPage && (
         <>
-          {/* Sidebar (Desktop and Mobile) */}
-          <div className="hidden md:block h-full">
-            <Sidebar isSidebarOpen={isSidebarOpen} />
-          </div>
-          <div className="block md:hidden h-full">
-            {isSidebarOpen && <Sidebar isSidebarOpen={isSidebarOpen} />}
-          </div>
+          {/* Sidebar */}
+          <SidebarContainer isSidebarOpen={isSidebarOpen} />
 
-          {/* Header */}
+          {/* Main Content with Header */}
           <div className="flex-1 flex flex-col">
             <Header onToggleSidebar={toggleSidebar} />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/produk" element={<Produk />} />
-              <Route path="/orderan" element={<Orderan />} />
-              <Route path="/add-product" element={<AddProduct />} />
-            </Routes>
+            <div className="flex-1 overflow-y-auto">
+              <RoutesContainer />
+            </div>
           </div>
         </>
       )}
-      {location.pathname === "/login" && (
+
+      {/* Login Page */}
+      {isLoginPage && (
         <div className="w-full">
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -75,5 +68,35 @@ function AppWithSidebarHeader({
         </div>
       )}
     </div>
+  );
+}
+
+// Sidebar Container Component
+function SidebarContainer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
+  return (
+    <>
+      {/* Sidebar for desktop */}
+      <div className="hidden md:block">
+        <Sidebar isSidebarOpen={isSidebarOpen} />
+      </div>
+
+      {/* Sidebar for mobile */}
+      <div className="block md:hidden">
+        {isSidebarOpen && <Sidebar isSidebarOpen={isSidebarOpen} />}
+      </div>
+    </>
+  );
+}
+
+// Routes Container Component
+function RoutesContainer() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/produk" element={<Produk />} />
+      <Route path="/orderan" element={<Orderan />} />
+      <Route path="/add-product" element={<AddProduct />} />
+    </Routes>
   );
 }
