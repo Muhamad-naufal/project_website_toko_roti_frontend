@@ -361,6 +361,69 @@ app.delete("/api/cart/:itemId", (req, res) => {
   });
 });
 
+// Endpoint untuk mengambil jumlah user
+app.get("/api/user/count", (req, res) => {
+  const query = "SELECT COUNT(*) AS count FROM users"; // gunakan alias `count`
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ message: "Error fetching user count" });
+    }
+    res.json({ count: results[0].count }); // gunakan `count`
+  });
+});
+
+// Endpoint untuk mengambil jumlah produk
+app.get("/api/produk/count", (req, res) => {
+  console.log("Endpoint hit: /api/products/count");
+  const query = "SELECT COUNT(*) AS count FROM products";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ message: "Error fetching product count" });
+    }
+    res.json({ count: results[0].count });
+  });
+});
+
+// Endpoint untuk mengambil jumlah orderan
+app.get("/api/order/count", (req, res) => {
+  const query = "SELECT COUNT(*) AS count FROM orders";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ message: "Error fetching order count" });
+    }
+    res.json({ count: results[0].count });
+  });
+});
+
+// Endpoint untuk mengambil data orderan
+app.get("/api/order", (req, res) => {
+  const query =
+    "SELECT u.name, p.name as product_name, oi.quantity, o.total_price, o.status FROM orders as o JOIN users as u ON o.user_id = u.id JOIN order_items as oi ON o.id = oi.order_id JOIN products as p ON oi.product_id = p.id";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ message: "Error fetching orders" });
+    }
+    res.json(results);
+  });
+});
+
+// Endpoint untuk mengambil total penjualan
+app.get("/api/sales/count", (req, res) => {
+  const query = "SELECT SUM(total_price) AS total_sales FROM orders";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ message: "Error fetching total sales" });
+    }
+    const totalSales = results[0].total_sales || 0; // Jika null atau undefined, set ke 0
+    res.json({ total_sales: totalSales });
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

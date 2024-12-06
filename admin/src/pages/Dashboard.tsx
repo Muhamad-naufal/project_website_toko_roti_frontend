@@ -31,17 +31,82 @@ const formatCurrency = (amount: number) => {
 
 const Dashboard = () => {
   // Dummy data for the chart
-  const [userCount, setUserCount] = useState(1200);
-  const [productCount, setProductCount] = useState(450);
   const [orderCount, setOrderCount] = useState(800);
 
+  // Fetching data user count
+  const [userCount, setUserCount] = useState(0);
+
+  // Fetching data user count
   useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      setUserCount(1350); // Simulating fetching data
-      setProductCount(500); // Simulating fetching data
-      setOrderCount(950); // Simulating fetching data
-    }, 1500);
+    const fetchData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/user/count"); // endpoint disesuaikan
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setUserCount(data.count); // gunakan nama `count` agar konsisten
+      } catch (error) {
+        console.error("Error fetching user count:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Fetching Product Count data
+  const [productCount, setProductCount] = useState(0);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/produk/count");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setProductCount(data.count);
+      } catch (error) {
+        console.error("Error fetching product count:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Fetching Order Count data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/order/count");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setOrderCount(data.count);
+      } catch (error) {
+        console.error("Error fetching order count:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Fetching Total Sales data
+  const [totalSales, setTotalSales] = useState(0);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/sales/count");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("Total Sales API Response:", data);
+        // Pastikan `totalSales` dikonversi ke angka jika perlu
+        setTotalSales(data.total_sales);
+      } catch (error) {
+        console.error("Error fetching total sales:", error);
+      }
+    };
+    fetchData();
   }, []);
 
   return (
@@ -116,7 +181,7 @@ const Dashboard = () => {
         <h3 className="text-xl font-semibold text-gray-800 mb-4">
           Total Sales
         </h3>
-        <p className="text-2xl font-bold">{formatCurrency(3500000)}</p>
+        <p className="text-2xl font-bold">{formatCurrency(totalSales)}</p>
       </motion.div>
     </div>
   );

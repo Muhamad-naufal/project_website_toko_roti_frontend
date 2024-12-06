@@ -1,32 +1,45 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 const Orderan = () => {
-  const orders = [
-    {
-      id: 1,
-      user: "John Doe",
-      product: "Produk A",
-      quantity: 2,
-      totalPrice: 100000,
-      status: "Pending",
-    },
-    {
-      id: 2,
-      user: "Jane Smith",
-      product: "Produk B",
-      quantity: 1,
-      totalPrice: 75000,
-      status: "Shipped",
-    },
-    {
-      id: 3,
-      user: "Alice Brown",
-      product: "Produk C",
-      quantity: 3,
-      totalPrice: 270000,
-      status: "Delivered",
-    },
-  ];
+  interface Order {
+    id: number;
+    name: string;
+    product_name: string;
+    quantity: number;
+    totalPrice: number;
+    status: string;
+  }
+  const [orderData, setOrderData] = useState<Order[]>([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/order");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched order data:", data);
+
+          // Map data untuk memastikan total_price adalah angka
+          const formattedData = data.map((order: any, index: number) => ({
+            id: index + 1, // Tambahkan id jika tidak ada
+            name: order.name,
+            product_name: order.product_name,
+            quantity: order.quantity,
+            totalPrice: parseFloat(order.total_price) || 0, // Konversi total_price ke angka
+            status: order.status,
+          }));
+
+          setOrderData(formattedData);
+        } else {
+          console.error("Failed to fetch order data:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching order data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="p-6 space-y-6">
@@ -56,7 +69,7 @@ const Orderan = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
+            {orderData.map((order: Order) => (
               <motion.tr
                 key={order.id}
                 className="border-b hover:bg-gray-50"
@@ -64,8 +77,8 @@ const Orderan = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
               >
-                <td className="p-4">{order.user}</td>
-                <td className="p-4">{order.product}</td>
+                <td className="p-4">{order.name}</td>
+                <td className="p-4">{order.product_name}</td>
                 <td className="p-4">{order.quantity}</td>
                 <td className="p-4">
                   {new Intl.NumberFormat("id-ID", {

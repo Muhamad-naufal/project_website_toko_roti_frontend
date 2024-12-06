@@ -2,7 +2,12 @@ perbaikan front end user
 1. urutkan produk menurut yang terbaru
 2. buat autentikasi untuk register untuk password harus ada huruf besar, 8 karakter, ada angkanya
 3. buat autentikasi untuk login untuk password membaca besar atau kecil hurufnya
+4. buat halaman search roti
+5. fungsikan search nya
+6. buat dibawah cart adalah status orderan
 
 perbaikan front end admin
 1. buat tampilan add produk
 2. buat tampilan edit produk
+3. buat search data roti
+4. buat search data orderan

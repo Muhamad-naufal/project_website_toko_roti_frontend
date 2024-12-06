@@ -1,33 +1,34 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { FaPen, FaTrashAlt, FaPlus } from "react-icons/fa";
 
 const Produk = () => {
-  const products = [
-    {
-      id: 1,
-      name: "Produk A",
-      category: "Kategori 1",
-      description: "Deskripsi produk A yang sangat menarik dan panjang",
-      price: 50000,
-      stock: 30,
-    },
-    {
-      id: 2,
-      name: "Produk B",
-      category: "Kategori 2",
-      description: "Deskripsi produk B yang hanya sedikit lebih panjang",
-      price: 75000,
-      stock: 15,
-    },
-    {
-      id: 3,
-      name: "Produk C",
-      category: "Kategori 3",
-      description: "Deskripsi produk C yang sangat menarik dan panjang",
-      price: 90000,
-      stock: 5,
-    },
-  ];
+  interface Product {
+    id: number;
+    name: string;
+    category: string;
+    description: string;
+    price: number;
+    stok: number;
+  }
+
+  const [products, setProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/products");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("Product data:", data);
+        setProducts(data.products);
+      } catch (error) {
+        console.error("Error fetching product data:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="p-6 space-y-6">
@@ -68,7 +69,7 @@ const Produk = () => {
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
+            {products.map((product: Product) => (
               <motion.tr
                 key={product.id}
                 className="border-b hover:bg-gray-50"
@@ -89,7 +90,7 @@ const Produk = () => {
                     currency: "IDR",
                   }).format(product.price)}
                 </td>
-                <td className="p-4">{product.stock}</td>
+                <td className="p-4">{product.stok}</td>
                 <td className="p-4">
                   <div className="flex gap-2">
                     <motion.button
