@@ -98,7 +98,9 @@ const Produk = () => {
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <FaPen />
+                      <a href="/edit-product">
+                        <FaPen />
+                      </a>
                     </motion.button>
                     <motion.button
                       className="text-red-600 hover:text-red-700"

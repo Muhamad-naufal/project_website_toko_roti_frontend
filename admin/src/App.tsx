@@ -13,6 +13,7 @@ import Produk from "./pages/Produk";
 import Orderan from "./pages/Orderan";
 import Login from "./pages/Login";
 import AddProduct from "./pages/AddProduct";
+import EditProduct from "./pages/EditProduct";
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -97,6 +98,7 @@ function RoutesContainer() {
       <Route path="/produk" element={<Produk />} />
       <Route path="/orderan" element={<Orderan />} />
       <Route path="/add-product" element={<AddProduct />} />
+      <Route path="/edit-product/" element={<EditProduct />} />
     </Routes>
   );
 }
