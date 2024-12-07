@@ -7,6 +7,8 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = 5000;
@@ -16,24 +18,30 @@ app.use(express.json());
 
 // Middleware untuk mengizinkan CORS
 app.use(cookieParser()); // Middleware untuk parsing cookies
-app.use(cors({ origin: "http://localhost:5173", credentials: true })); // Pastikan credentials diizinkan
+
+// Configure CORS to allow both origins
+const corsOptions = {
+  origin: [
+    "http://localhost:5173", // Allow this origin
+    "http://localhost:5175", // Allow this origin as well
+  ],
+  credentials: true, // Mengizinkan pengiriman cookies
+  optionsSuccessStatus: 200, // Status untuk permintaan preflight yang berhasil
+};
+
+// Use the single CORS middleware configuration
+app.use(cors(corsOptions));
+
 app.use(bodyParser.json());
 app.use(express.json()); // Untuk menangani data JSON
 app.use(express.urlencoded({ extended: true })); // Untuk menangani data URL-encoded
 app.use("/uploads", express.static("uploads"));
 
-// Konfigurasi CORS
-const corsOptions = {
-  origin: [
-    "http://localhost:5175",
-    "http://localhost:5173",
-    "http://localhost:5174",
-  ], // Ganti dengan origin frontend Anda
-  credentials: true, // Mengizinkan pengiriman cookies
-  optionsSuccessStatus: 200, // Status untuk permintaan preflight yang berhasil
-};
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-app.use(cors(corsOptions));
+// Your other routes and logic...
 
 // Koneksi ke database
 const db = mysql.createConnection({
@@ -466,6 +474,99 @@ app.post("/api/products/add", upload.single("image"), (req, res) => {
       res.json({ success: true, id: results.insertId });
     }
   );
+});
+
+// Endpoint untuk mengupdate produk
+app.put("/api/products/update/:id", upload.single("image"), (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, stock, category } = req.body;
+  const image = req.file ? req.file.filename : null;
+
+  // Query untuk mendapatkan URL gambar lama
+  const getImageQuery = `SELECT image_url FROM products WHERE id = ?`;
+
+  db.query(getImageQuery, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    // Jika tidak ada hasil, produk tidak ditemukan
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Jika ada hasil, ambil URL gambar lama
+    const previousImageUrl = results[0].image_url;
+
+    // Gunakan gambar lama jika gambar baru tidak diunggah
+    const imageUrl = image ? `/uploads/${image}` : previousImageUrl;
+
+    // Query untuk mengupdate data produk
+    const updateQuery = `
+      UPDATE products
+      SET name = ?, description = ?, price = ?, stock = ?, category = ?, image_url = ?
+      WHERE id = ?
+    `;
+
+    db.query(
+      updateQuery,
+      [name, description, price, stock, category, imageUrl, id],
+      (updateErr) => {
+        if (updateErr)
+          return res.status(500).json({ error: updateErr.message });
+
+        res.json({ success: true, message: "Product updated successfully" });
+      }
+    );
+  });
+});
+
+app.delete("/api/products/delete/:id", (req, res) => {
+  const { id } = req.params;
+  console.log(`Attempting to delete product with id: ${id}`);
+
+  const getImageQuery = `SELECT image_url FROM products WHERE id = ?`;
+
+  db.query(getImageQuery, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching product image:", err);
+      return res.status(500).json({ error: "Error fetching product image" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const imageUrl = results[0].image_url;
+
+    // Delete the related cart items first
+    const deleteCartItemsQuery = `DELETE FROM cart_items WHERE product_id = ?`;
+
+    db.query(deleteCartItemsQuery, [id], (cartItemsErr) => {
+      if (cartItemsErr) {
+        console.error("Error deleting cart items:", cartItemsErr);
+        return res.status(500).json({ error: "Error deleting cart items" });
+      }
+
+      const deleteProductQuery = `DELETE FROM products WHERE id = ?`;
+
+      db.query(deleteProductQuery, [id], (deleteErr) => {
+        if (deleteErr) {
+          console.error("Error deleting product:", deleteErr);
+          return res.status(500).json({ error: "Error deleting product" });
+        }
+
+        if (imageUrl) {
+          const imagePath = path.join(__dirname, imageUrl);
+          fs.unlink(imagePath, (unlinkErr) => {
+            if (unlinkErr) {
+              console.error("Error deleting image:", unlinkErr);
+            }
+          });
+        }
+
+        res.json({ success: true, message: "Product deleted successfully" });
+      });
+    });
+  });
 });
 
 // Start server

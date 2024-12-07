@@ -13,8 +13,13 @@ const Produk = () => {
   }
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch data produk
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProducts = async () => {
+      setLoading(true);
       try {
         const response = await fetch("http://localhost:5000/api/products");
         if (!response.ok) {
@@ -23,12 +28,43 @@ const Produk = () => {
         const data = await response.json();
         console.log("Product data:", data);
         setProducts(data.products);
-      } catch (error) {
-        console.error("Error fetching product data:", error);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+        console.error("Error fetching product data:", err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchData();
+    fetchProducts();
   }, []);
+
+  // Fungsi untuk menghapus produk
+  const deleteProduct = async (id: number) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/products/delete/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        console.error("Server responded with error:", result);
+        throw new Error(
+          result.error || `HTTP error! status: ${response.status}`
+        );
+      }
+      console.log("Product deleted:", result);
+      setProducts((prevProducts) =>
+        prevProducts.filter((product) => product.id !== id)
+      );
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p className="text-red-600">Error: {error}</p>;
 
   return (
     <div className="p-6 space-y-6">
@@ -69,7 +105,7 @@ const Produk = () => {
             </tr>
           </thead>
           <tbody>
-            {products.map((product: Product) => (
+            {products.map((product) => (
               <motion.tr
                 key={product.id}
                 className="border-b hover:bg-gray-50"
@@ -99,7 +135,7 @@ const Produk = () => {
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <a href="/edit-product">
+                      <a href={`/edit-product/${product.id}`}>
                         <FaPen />
                       </a>
                     </motion.button>
@@ -108,6 +144,7 @@ const Produk = () => {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.3 }}
+                      onClick={() => deleteProduct(product.id)}
                     >
                       <FaTrashAlt />
                     </motion.button>

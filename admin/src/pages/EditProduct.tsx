@@ -1,10 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useParams } from "react-router-dom";
 
 const EditProduct = () => {
+  const { id } = useParams<{ id: string }>();
+  const [product, setProduct] = useState({
+    name: "",
+    description: "",
+    price: "",
+    stock: "",
+    category: "",
+  });
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const categories = ["Bread", "Cake", "Pastry", "Cookies"]; // Example categories
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/categories");
+        const data = await response.json();
+        const cleanedCategories = data.map((category: string) =>
+          category.trim().replace(/['"]/g, "")
+        );
+        setCategories(cleanedCategories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleImageUpload = (file: File) => {
     if (file) {
@@ -31,6 +57,92 @@ const EditProduct = () => {
     if (file) handleImageUpload(file);
   };
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/products/${id}`
+        );
+        const data = await response.json();
+        if (response.ok) {
+          setProduct({
+            name: data.name,
+            description: data.description,
+            price: data.price,
+            stock: data.stock,
+            category: data.category,
+          });
+          if (data.image) {
+            setPreview(data.image); // Assuming the API returns the image URL
+          }
+        } else {
+          console.error("Failed to fetch product data:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching product data:", error);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setProduct((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validasi sederhana
+    if (
+      !product.name ||
+      !product.price ||
+      !product.stock ||
+      !product.category
+    ) {
+      alert("All fields are required except image!");
+      return;
+    }
+
+    setIsLoading(true);
+
+    const formData = new FormData();
+    formData.append("name", product.name);
+    formData.append("description", product.description);
+    formData.append("price", product.price);
+    formData.append("stock", product.stock);
+    formData.append("category", product.category);
+    if (image) formData.append("image", image);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/products/update/${id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
+      const result = await response.json();
+      if (response.ok) {
+        alert("Product updated successfully!");
+        // Redirect or reset form if needed
+      } else {
+        alert(`Failed to update product: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      alert("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <motion.div
       className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg"
@@ -39,7 +151,7 @@ const EditProduct = () => {
       transition={{ duration: 0.5 }}
     >
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Product</h2>
-      <form className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {/* Image Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -100,7 +212,9 @@ const EditProduct = () => {
           </label>
           <input
             type="text"
-            placeholder="Enter product name"
+            name="name"
+            value={product.name}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           />
         </div>
@@ -111,7 +225,9 @@ const EditProduct = () => {
             Product Description
           </label>
           <textarea
-            placeholder="Describe the ingredients and taste to attract customers"
+            name="description"
+            value={product.description}
+            onChange={handleInputChange}
             rows={4}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           ></textarea>
@@ -125,7 +241,9 @@ const EditProduct = () => {
             </label>
             <input
               type="number"
-              placeholder="Enter price"
+              name="price"
+              value={product.price}
+              onChange={handleInputChange}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
@@ -135,7 +253,9 @@ const EditProduct = () => {
             </label>
             <input
               type="number"
-              placeholder="Enter stock quantity"
+              name="stock"
+              value={product.stock}
+              onChange={handleInputChange}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
@@ -146,10 +266,19 @@ const EditProduct = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Category
           </label>
-          <select className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300">
+          {/* // Kode bagian dropdown category */}
+          <select
+            name="category"
+            value={product.category}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
+          >
             <option value="">Select Category</option>
-            {categories.map((category, index) => (
-              <option key={index} value={category}>
+            {[
+              product.category, // Tambahkan kategori yang di-fetch di urutan pertama
+              ...categories.filter((category) => category !== product.category), // Sisanya tanpa duplikasi
+            ].map((category) => (
+              <option key={category} value={category}>
                 {category}
               </option>
             ))}
@@ -160,9 +289,14 @@ const EditProduct = () => {
         <div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300"
+            className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring ${
+              isLoading
+                ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                : "bg-blue-500 text-white hover:bg-blue-600"
+            }`}
+            disabled={isLoading}
           >
-            Add Product
+            {isLoading ? "Updating..." : "Update Product"}
           </button>
         </div>
       </form>

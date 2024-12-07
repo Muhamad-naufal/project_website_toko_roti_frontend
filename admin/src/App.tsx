@@ -98,7 +98,7 @@ function RoutesContainer() {
       <Route path="/produk" element={<Produk />} />
       <Route path="/orderan" element={<Orderan />} />
       <Route path="/add-product" element={<AddProduct />} />
-      <Route path="/edit-product/" element={<EditProduct />} />
+      <Route path="/edit-product/:id" element={<EditProduct />} />
     </Routes>
   );
 }
