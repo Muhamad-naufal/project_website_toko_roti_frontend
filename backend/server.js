@@ -525,9 +525,10 @@ app.get("/api/order/user", (req, res) => {
     return res.status(401).json({ message: "User not found." });
   }
 
-  const query = `SELECT orders.*, order_items.*, products.name as product_name, products.price, products.image_url
-                  FROM orders Join order_items ON orders.id = order_items.order_id join products ON order_items.product_id = products.id
-                 WHERE user_id = ${userId}`;
+  const query = `SELECT orders.*, order_items.*, products.name as product_name, products.price, products.image_url, users.name as user_name
+                  FROM orders Join order_items ON orders.id = order_items.order_id join products ON order_items.product_id = products.id join users ON orders.user_id = users.id
+                 WHERE user_id = ${userId}
+                 ORDER BY order_items.created_at DESC`;
 
   db.query(query, [userId], (err, results) => {
     if (err) {
@@ -688,6 +689,32 @@ app.delete("/api/products/delete/:id", (req, res) => {
         });
       });
     });
+  });
+});
+
+// Endpoint untuk update status orderan
+
+// Fetch status options
+app.get("/api/status-options", (req, res) => {
+  const statusOptions = ["Pending", "Processing", "Completed", "Cancelled"];
+  res.json(statusOptions);
+});
+
+// Update order status
+app.put("/api/order/:id/status", (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const query = "UPDATE orders SET status = ? WHERE id = ?";
+  db.query(query, [status, id], (err, result) => {
+    if (err) {
+      console.error("Error updating status:", err);
+      res.status(500).json({ error: "Failed to update order status." });
+    } else if (result.affectedRows === 0) {
+      res.status(404).json({ error: "Order not found." });
+    } else {
+      res.json({ message: "Order status updated successfully." });
+    }
   });
 });
 

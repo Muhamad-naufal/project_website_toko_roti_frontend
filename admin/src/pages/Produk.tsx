@@ -15,13 +15,24 @@ const Produk = () => {
   const [products, setProducts] = useState<Product[]>([]); // Initializing as an empty array
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Filter products based on search query
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Safely calculate totalPages with a null check for products
-  const totalPages = products ? Math.ceil(products.length / itemsPerPage) : 0;
+  const totalPages = products
+    ? Math.ceil(filteredProducts.length / itemsPerPage)
+    : 0;
 
   // Fetch data produk
   useEffect(() => {
@@ -76,11 +87,10 @@ const Produk = () => {
   // Get current page data
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = (products || []).slice(
+  const currentItems = filteredProducts.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
-  console.log(currentItems); // Check if data is correctly sliced
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-600">Error: {error}</p>;
@@ -105,6 +115,17 @@ const Produk = () => {
           </a>
         </motion.button>
       </motion.div>
+
+      {/* Search input */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Cari produk..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+        />
+      </div>
 
       <motion.div
         className="overflow-x-auto bg-white rounded-lg shadow-lg"
@@ -175,6 +196,7 @@ const Produk = () => {
         </table>
       </motion.div>
 
+      {/* Pagination */}
       <div className="flex justify-center space-x-2 mt-4">
         {Array.from({ length: totalPages }, (_, index) => (
           <button

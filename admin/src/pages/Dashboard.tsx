@@ -179,7 +179,7 @@ const Dashboard = () => {
         transition={{ duration: 0.5 }}
       >
         <h3 className="text-xl font-semibold text-gray-800 mb-4">
-          Total Sales
+          Total Omset
         </h3>
         <p className="text-2xl font-bold">{formatCurrency(totalSales)}</p>
       </motion.div>

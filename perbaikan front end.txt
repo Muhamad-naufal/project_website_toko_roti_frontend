@@ -2,15 +2,30 @@ perbaikan front end user
 1. urutkan produk menurut yang terbaru (Done)
 2. buat autentikasi untuk register untuk password harus ada huruf besar, 8 karakter, ada angkanya (Done)
 3. buat autentikasi untuk login untuk password membaca besar atau kecil hurufnya (Done)
-4. buat dibawah cart adalah status orderan
+4. Membuat page order (Done)
 5. middleware (Done)
 6. buatkan filter produk (Done)
 7. saat klik logo cart di navbar, sebelum login, tidak bisa (Done)
+8. urutkan orderan menurut yang baru aja diorder (Done)
+9. urutkan produk berdasarkan baru aja diupdate
 
 perbaikan front end admin
-1. buat search data roti
-2. buat search data orderan
-3. buat paginasi untuk orderan
-4. buat filter untuk produk
-5. buat filter untuk orderan
-6. di bagian orderan kolom status, buat seperti dropdown, agar bisa update status
+1. buat search data roti (Done)
+2. buat search data orderan (Done)
+3. buat paginasi untuk orderan (Done)
+4. di bagian orderan kolom status, buat seperti dropdown, agar bisa update status
+5. buat Login Admin berfungsi
+6. jika belum login, tidak bisa masuk
+
+
+perbaikan
+1. di bagian login, password dan email tidak sama
+2. untuk cart quantity, harus sama dengan stok di database
+3. untuk single page quantity, harus sama dengan stok di database
+4. di bagian cart dan order saat kosong, ubah menggunakan gambar yang menarik
+5. order admin, ambil primary key id order, bukan id user
+6. logout di sidebar dihapus, dan logout di navbar ubah ke icon
+7. tambah page tambah category
+8. tambah page category
+9. tambah edit category
+10. tambah hapus category
