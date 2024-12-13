@@ -78,7 +78,7 @@ const Recommended: React.FC = () => {
               whileHover={{ scale: 1.05 }}
             >
               <img
-                src={product.image_url}
+                src={`../../backend${product.image_url}`}
                 alt={product.name}
                 className="w-full h-40 object-cover rounded-lg mb-4"
               />

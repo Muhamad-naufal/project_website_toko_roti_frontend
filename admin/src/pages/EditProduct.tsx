@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "react-router-dom";
+import Swal from "sweetalert2";
 
 const EditProduct = () => {
   const { id } = useParams<{ id: string }>();
@@ -130,10 +131,22 @@ const EditProduct = () => {
       );
       const result = await response.json();
       if (response.ok) {
-        alert("Product updated successfully!");
-        // Redirect or reset form if needed
+        Swal.fire({
+          icon: "success",
+          title: "Product updated successfully!",
+          showConfirmButton: false,
+          timer: 1500,
+        }).then(() => {
+          window.location.reload();
+        });
       } else {
-        alert(`Failed to update product: ${result.message}`);
+        Swal.fire({
+          icon: "error",
+          title: "Failed to update product",
+          text: result.message,
+        }).then(() => {
+          window.location.reload();
+        });
       }
     } catch (error) {
       console.error("Error updating product:", error);

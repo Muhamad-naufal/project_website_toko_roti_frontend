@@ -5,9 +5,13 @@ perbaikan front end user
 4. buat halaman search roti
 5. fungsikan search nya
 6. buat dibawah cart adalah status orderan
+7. middleware
+8. buatkan filter produk
+9. saat klik logo cart di navbar, sebelum login, tidak bisa
 
 perbaikan front end admin
-1. buat tampilan add produk
-2. buat tampilan edit produk
-3. buat search data roti
-4. buat search data orderan
+1. buat search data roti
+2. buat search data orderan
+3. buat paginasi untuk orderan
+4. buat filter untuk produk
+5. buat filter untuk orderan

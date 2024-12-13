@@ -10,7 +10,7 @@ interface Product {
   category: string;
   price: number;
   image_url: string;
-  stock: number; // Tambahkan properti stock
+  stock: number;
 }
 
 const ProductList: React.FC = () => {
@@ -19,8 +19,37 @@ const ProductList: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [searchQuery] = useState<string>("");
 
   const productsPerPage = 8;
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/products?page=${currentPage}&limit=${productsPerPage}&category=${selectedCategory}&search=${searchQuery}`
+        );
+        const data = await response.json();
+        const filteredProducts =
+          Array.isArray(data.products) && selectedCategory === "all"
+            ? data.products
+            : data.products.filter(
+                (product: Product) =>
+                  product.category.toLowerCase() ===
+                    selectedCategory.toLowerCase() &&
+                  product.name.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
+        setProducts(filteredProducts);
+        setTotalPages(data.totalPages);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, [selectedCategory, currentPage, searchQuery]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -39,32 +68,6 @@ const ProductList: React.FC = () => {
     fetchCategories();
   }, []);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:5000/api/products?page=${currentPage}&limit=${productsPerPage}&category=${selectedCategory}`
-        );
-        const data = await response.json();
-        const filteredProducts =
-          Array.isArray(data.products) && selectedCategory === "all"
-            ? data.products
-            : data.products.filter(
-                (product: Product) =>
-                  product.category.toLowerCase() ===
-                  selectedCategory.toLowerCase()
-              );
-
-        setProducts(filteredProducts);
-        setTotalPages(data.totalPages);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-
-    fetchProducts();
-  }, [selectedCategory, currentPage]);
-
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -73,7 +76,25 @@ const ProductList: React.FC = () => {
   };
 
   const handleAddToCart = async (product: Product) => {
+    const cookies = document.cookie; // Mendapatkan cookies
+    const userId = cookies.match(/user_id=([^;]+)/)?.[1]; // Mencari user_id di cookies
+
+    if (!userId) {
+      // Jika user_id tidak ditemukan, arahkan ke halaman login
+      Swal.fire({
+        icon: "warning",
+        title: "Login Required",
+        text: "Please log in to add products to your cart.",
+        showConfirmButton: true,
+      }).then(() => {
+        // Mengarahkan ke halaman login
+        window.location.href = "/login"; // Atau gunakan history.push("/login") jika menggunakan useHistory
+      });
+      return; // Tidak lanjutkan proses jika tidak ada user_id
+    }
+
     try {
+      // Lanjutkan untuk menambahkan produk ke keranjang
       await fetch("http://localhost:5000/api/cart/add", {
         method: "POST",
         headers: {
@@ -102,29 +123,76 @@ const ProductList: React.FC = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6 mt-4 text-center">Produk Kami</h1>
 
-      <div className="flex space-x-4 mb-6">
-        {categories.map((category, index) => (
-          <motion.button
-            key={index}
-            onClick={() =>
-              setSelectedCategory(
-                category === "All" ? "all" : category.toLowerCase()
-              )
-            }
-            className={`px-4 py-2 rounded-lg font-semibold ${
-              selectedCategory ===
-              (category === "All" ? "all" : category.toLowerCase())
-                ? "bg-yellow-500 text-white"
-                : "bg-gray-200 text-gray-800"
-            } hover:bg-yellow-400`}
-            whileHover={{ scale: 1.05 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            {category}
-          </motion.button>
-        ))}
+      <div className="flex items-center mb-6 space-x-4">
+        <div className="relative inline-block text-left">
+          <div className="relative inline-block text-left mb-6 items-center">
+            {/* Dropdown menu */}
+            <div className="flex items-center mb-6 space-x-4">
+              {/* Category Dropdown */}
+              <div className="relative inline-block text-left">
+                <motion.button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="px-6 py-3 rounded-full bg-yellow-500 text-white font-semibold text-lg w-full sm:w-auto focus:outline-none hover:bg-yellow-400"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {selectedCategory === "all"
+                    ? "Select Category"
+                    : selectedCategory}
+                  <i className="fa-solid fa-chevron-down ml-2"></i>
+                </motion.button>
+
+                {/* Dropdown menu */}
+                {isDropdownOpen && (
+                  <motion.div
+                    className="absolute left-0 mt-2 w-full sm:w-48 bg-white shadow-lg rounded-md z-10"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="py-1">
+                      {categories.map((category, index) => (
+                        <motion.button
+                          key={index}
+                          onClick={() => {
+                            setSelectedCategory(
+                              category === "All"
+                                ? "all"
+                                : category.toLowerCase()
+                            );
+                            setIsDropdownOpen(false); // Close dropdown after selection
+                          }}
+                          className={`block px-4 py-2 text-sm text-gray-700 hover:bg-yellow-100 w-full text-left ${
+                            selectedCategory ===
+                            (category === "All"
+                              ? "all"
+                              : category.toLowerCase())
+                              ? "bg-yellow-500 text-white"
+                              : ""
+                          }`}
+                        >
+                          {category}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Search Input */}
+              {/* <div className="mb-6 w-full sm:w-1/3">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full"
+                />
+              </div> */}
+            </div>
+          </div>
+        </div>
       </div>
 
       <motion.div
@@ -192,7 +260,7 @@ const ProductList: React.FC = () => {
                   color="yellow"
                   className="text-gray-800 py-2 px-4 rounded-md transition duration-300 hover:bg-yellow-600"
                 >
-                  <Link to={`/product/${product.id}`}>
+                  <Link to={`/products/${product.id}`}>
                     <i className="fa-solid fa-eye"></i>
                   </Link>
                 </Button>
@@ -200,28 +268,24 @@ const ProductList: React.FC = () => {
             </motion.div>
           ))
         ) : (
-          <p className="text-center text-gray-500">
-            No products found in this category.
-          </p>
+          <div className="col-span-full text-center text-gray-500">
+            No products found
+          </div>
         )}
       </motion.div>
-      <div className="flex justify-center space-x-4 mt-6">
+
+      <div className="flex justify-center mt-8">
         <Button
-          variant="link"
-          color="yellow"
-          className="px-4 py-2 rounded-lg"
-          onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+          onClick={() => setCurrentPage(currentPage - 1)}
           disabled={currentPage === 1}
+          className="px-6 py-2 rounded-full bg-yellow-500 text-white"
         >
           Previous
         </Button>
-        <span className="text-xl">{`Page ${currentPage} of ${totalPages}`}</span>
         <Button
-          variant="link"
-          color="yellow"
-          className="px-4 py-2 rounded-lg"
-          onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+          onClick={() => setCurrentPage(currentPage + 1)}
           disabled={currentPage === totalPages}
+          className="ml-4 px-6 py-2 rounded-full bg-yellow-500 text-white"
         >
           Next
         </Button>

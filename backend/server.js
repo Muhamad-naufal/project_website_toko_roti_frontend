@@ -22,7 +22,8 @@ app.use(cookieParser()); // Middleware untuk parsing cookies
 // Configure CORS to allow both origins
 const corsOptions = {
   origin: [
-    "http://localhost:5173", // Allow this origin
+    "http://localhost:5173",
+    "http://localhost:5174", // Allow this origin
     "http://localhost:5175", // Allow this origin as well
   ],
   credentials: true, // Mengizinkan pengiriman cookies
@@ -43,13 +44,19 @@ const __dirname = path.dirname(__filename);
 
 // Your other routes and logic...
 
-// Koneksi ke database
-const db = mysql.createConnection({
+// Create a connection pool
+const db = mysql.createPool({
   host: "localhost",
   user: "root",
   password: "",
   database: "toko_roti",
+  waitForConnections: true, // Wait for available connections if all are in use
+  connectionLimit: 10, // Limit the number of connections in the pool
+  queueLimit: 0, // No limit for queueing requests
 });
+
+// Export the pool
+export default db.promise();
 
 console.log("Connected to the database");
 
@@ -71,31 +78,88 @@ app.get("/api/products", (req, res) => {
   }
 
   // Query to fetch the products with pagination and filtering by category
-  db.query(query + ` LIMIT ${limit} OFFSET ${offset}`, (err, results) => {
+  db.query(
+    query + ` ORDER BY updated_at DESC LIMIT ${limit} OFFSET ${offset}`,
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error fetching products" });
+      }
+
+      // Query to get the total number of products for the filtered category
+      db.query(countQuery, (err, countResult) => {
+        if (err) {
+          console.error(err);
+          return res
+            .status(500)
+            .json({ message: "Error fetching total product count" });
+        }
+
+        const totalProducts = countResult[0].totalProducts;
+        const totalPages = Math.ceil(totalProducts / limit);
+
+        // Respond with the filtered products and the total count for pagination
+        res.json({
+          products: results,
+          totalProducts: totalProducts,
+          totalPages: totalPages,
+        });
+      });
+    }
+  );
+});
+
+// Product search
+app.get("/api/products/search", async (req, res) => {
+  const { page = 1, limit = 8, category = "all", search = "" } = req.query;
+  const offset = (page - 1) * limit;
+
+  try {
+    let query = `SELECT * FROM products WHERE 1=1`;
+    let queryParams = [];
+
+    // Filter by category
+    if (category !== "all") {
+      query += ` AND category = ?`;
+      queryParams.push(category);
+    }
+
+    // Filter by search query
+    if (search) {
+      query += ` AND name LIKE ?`;
+      queryParams.push(`%${search}%`);
+    }
+
+    // Apply pagination
+    query += ` LIMIT ? OFFSET ?`;
+    queryParams.push(Number(limit), Number(offset));
+
+    // Get the filtered products
+    const [products] = db.execute(query, queryParams);
+
+    // Get the total count for pagination
+    const [countResult] = db.execute("SELECT COUNT(*) AS total FROM products");
+    const totalCount = countResult[0].total;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.json({ products, totalPages });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+// Other routes or middlewares
+
+// Endpoint untuk memunculkan semua produk admin
+app.get("/api/products/all", (req, res) => {
+  const query = "SELECT * FROM products";
+  db.query(query, (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ message: "Error fetching products" });
     }
-
-    // Query to get the total number of products for the filtered category
-    db.query(countQuery, (err, countResult) => {
-      if (err) {
-        console.error(err);
-        return res
-          .status(500)
-          .json({ message: "Error fetching total product count" });
-      }
-
-      const totalProducts = countResult[0].totalProducts;
-      const totalPages = Math.ceil(totalProducts / limit);
-
-      // Respond with the filtered products and the total count for pagination
-      res.json({
-        products: results,
-        totalProducts: totalProducts,
-        totalPages: totalPages,
-      });
-    });
+    res.json(results); // Mengirimkan data langsung
   });
 });
 
@@ -502,7 +566,7 @@ app.put("/api/products/update/:id", upload.single("image"), (req, res) => {
     // Query untuk mengupdate data produk
     const updateQuery = `
       UPDATE products
-      SET name = ?, description = ?, price = ?, stock = ?, category = ?, image_url = ?
+      SET name = ?, description = ?, price = ?, stock = ?, category = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
 
@@ -519,6 +583,7 @@ app.put("/api/products/update/:id", upload.single("image"), (req, res) => {
   });
 });
 
+// Endpoint untuk menghapus produk
 app.delete("/api/products/delete/:id", (req, res) => {
   const { id } = req.params;
   console.log(`Attempting to delete product with id: ${id}`);
@@ -537,33 +602,44 @@ app.delete("/api/products/delete/:id", (req, res) => {
 
     const imageUrl = results[0].image_url;
 
-    // Delete the related cart items first
-    const deleteCartItemsQuery = `DELETE FROM cart_items WHERE product_id = ?`;
+    // Delete related rows in order_items first
+    const deleteOrderItemsQuery = `DELETE FROM order_items WHERE product_id = ?`;
 
-    db.query(deleteCartItemsQuery, [id], (cartItemsErr) => {
-      if (cartItemsErr) {
-        console.error("Error deleting cart items:", cartItemsErr);
-        return res.status(500).json({ error: "Error deleting cart items" });
+    db.query(deleteOrderItemsQuery, [id], (orderItemsErr) => {
+      if (orderItemsErr) {
+        console.error("Error deleting order items:", orderItemsErr);
+        return res.status(500).json({ error: "Error deleting order items" });
       }
 
-      const deleteProductQuery = `DELETE FROM products WHERE id = ?`;
+      // Then delete related rows in cart_items
+      const deleteCartItemsQuery = `DELETE FROM cart_items WHERE product_id = ?`;
 
-      db.query(deleteProductQuery, [id], (deleteErr) => {
-        if (deleteErr) {
-          console.error("Error deleting product:", deleteErr);
-          return res.status(500).json({ error: "Error deleting product" });
+      db.query(deleteCartItemsQuery, [id], (cartItemsErr) => {
+        if (cartItemsErr) {
+          console.error("Error deleting cart items:", cartItemsErr);
+          return res.status(500).json({ error: "Error deleting cart items" });
         }
 
-        if (imageUrl) {
-          const imagePath = path.join(__dirname, imageUrl);
-          fs.unlink(imagePath, (unlinkErr) => {
-            if (unlinkErr) {
-              console.error("Error deleting image:", unlinkErr);
-            }
-          });
-        }
+        // Finally, delete the product
+        const deleteProductQuery = `DELETE FROM products WHERE id = ?`;
 
-        res.json({ success: true, message: "Product deleted successfully" });
+        db.query(deleteProductQuery, [id], (deleteErr) => {
+          if (deleteErr) {
+            console.error("Error deleting product:", deleteErr);
+            return res.status(500).json({ error: "Error deleting product" });
+          }
+
+          if (imageUrl) {
+            const imagePath = path.join(__dirname, imageUrl);
+            fs.unlink(imagePath, (unlinkErr) => {
+              if (unlinkErr) {
+                console.error("Error deleting image:", unlinkErr);
+              }
+            });
+          }
+
+          res.json({ success: true, message: "Product deleted successfully" });
+        });
       });
     });
   });

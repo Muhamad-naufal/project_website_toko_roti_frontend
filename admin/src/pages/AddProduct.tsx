@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 const AddProduct = () => {
   const [image, setImage] = useState<File | null>(null);
@@ -82,9 +83,22 @@ const AddProduct = () => {
       );
 
       if (response.data.success) {
-        alert("Product added successfully!");
+        Swal.fire({
+          icon: "success",
+          title: "Produk berhasil ditambahkan!",
+          showConfirmButton: false,
+          timer: 1500,
+        }).then(() => {
+          window.location.reload();
+        });
       } else {
-        alert("Failed to add product.");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal menambahkan produk",
+          text: response.data.message,
+        }).then(() => {
+          window.location.reload();
+        });
       }
     } catch (error) {
       console.error("Error adding product:", error);

@@ -12,22 +12,29 @@ const Produk = () => {
     stock: number;
   }
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]); // Initializing as an empty array
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Safely calculate totalPages with a null check for products
+  const totalPages = products ? Math.ceil(products.length / itemsPerPage) : 0;
 
   // Fetch data produk
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:5000/api/products");
+        const response = await fetch("http://localhost:5000/api/products/all");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log("Product data:", data);
-        setProducts(data.products);
+        console.log(data); // Pastikan data yang diterima sesuai
+        setProducts(data); // Jika data sudah berbentuk array langsung, langsung gunakan data
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
         console.error("Error fetching product data:", err);
@@ -35,10 +42,11 @@ const Produk = () => {
         setLoading(false);
       }
     };
+
     fetchProducts();
   }, []);
 
-  // Fungsi untuk menghapus produk
+  // Function to delete product
   const deleteProduct = async (id: number) => {
     try {
       const response = await fetch(
@@ -49,12 +57,10 @@ const Produk = () => {
       );
       const result = await response.json();
       if (!response.ok) {
-        console.error("Server responded with error:", result);
         throw new Error(
           result.error || `HTTP error! status: ${response.status}`
         );
       }
-      console.log("Product deleted:", result);
       setProducts((prevProducts) =>
         prevProducts.filter((product) => product.id !== id)
       );
@@ -62,6 +68,19 @@ const Produk = () => {
       console.error("Error deleting product:", error);
     }
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Get current page data
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = (products || []).slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  console.log(currentItems); // Check if data is correctly sliced
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-600">Error: {error}</p>;
@@ -105,7 +124,7 @@ const Produk = () => {
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
+            {currentItems.map((product) => (
               <motion.tr
                 key={product.id}
                 className="border-b hover:bg-gray-50"
@@ -155,6 +174,22 @@ const Produk = () => {
           </tbody>
         </table>
       </motion.div>
+
+      <div className="flex justify-center space-x-2 mt-4">
+        {Array.from({ length: totalPages }, (_, index) => (
+          <button
+            key={index}
+            className={`px-3 py-1 rounded ${
+              currentPage === index + 1
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            } hover:bg-blue-700 transition`}
+            onClick={() => handlePageChange(index + 1)}
+          >
+            {index + 1}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

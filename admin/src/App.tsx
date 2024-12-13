@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
-import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Produk from "./pages/Produk";
 import Orderan from "./pages/Orderan";
@@ -93,7 +92,7 @@ function SidebarContainer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
 function RoutesContainer() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<Dashboard />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/produk" element={<Produk />} />
       <Route path="/orderan" element={<Orderan />} />

@@ -72,7 +72,7 @@ const SingleProduct: React.FC = () => {
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
             <img
-              src={product.image_url}
+              src={`../../backend${product.image_url}`}
               alt={product.name}
               className="rounded-lg shadow-md"
             />
@@ -141,7 +141,15 @@ const SingleProduct: React.FC = () => {
                         timer: 1500,
                       });
                     } else {
-                      alert("Gagal menambahkan produk ke keranjang.");
+                      Swal.fire({
+                        icon: "error",
+                        title: "Error",
+                        text: "Login dulu",
+                        showConfirmButton: false,
+                        timer: 1500,
+                      }).then(() => {
+                        window.location.href = "/login";
+                      });
                     }
                   } catch (error) {
                     console.error("Error:", error);
