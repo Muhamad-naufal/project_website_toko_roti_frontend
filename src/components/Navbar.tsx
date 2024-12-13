@@ -51,13 +51,25 @@ const Navbar: React.FC = () => {
         </a>
 
         {userId ? (
-          // Jika user_id ada, tampilkan ikon logout
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 hover:text-gray-400"
-          >
-            <i className="fas fa-sign-out-alt"></i>
-          </button>
+          // Jika user_id ada, tampilkan ikon logout dan cart
+          <>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 hover:text-gray-400"
+            >
+              <i className="fas fa-sign-out-alt"></i>
+            </button>
+            <Button variant="default" className="hover:bg-gray-700">
+              <a href={`/cart/${userId}`}>
+                <i className="fas fa-shopping-cart"></i>
+              </a>
+            </Button>
+            <Button variant="default" className="hover:bg-gray-700">
+              <a href={`/order/${userId}`}>
+                <i className="fa-solid fa-truck-fast"></i>
+              </a>
+            </Button>
+          </>
         ) : (
           <>
             <Button variant="destructive" className="hover:bg-gray-700">
@@ -68,12 +80,6 @@ const Navbar: React.FC = () => {
             </Button>
           </>
         )}
-
-        <Button variant="default" className="hover:bg-gray-700">
-          <a href="/cart">
-            <i className="fas fa-shopping-cart"></i>
-          </a>
-        </Button>
       </div>
 
       {/* Mobile Navigation */}
@@ -110,13 +116,25 @@ const Navbar: React.FC = () => {
           </a>
 
           {userId ? (
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 hover:text-gray-400"
-            >
-              <i className="fas fa-sign-out-alt"></i>
-              <span>Logout</span>
-            </button>
+            <>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 hover:text-gray-400"
+              >
+                <i className="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+              </button>
+              <Button variant="default" className="hover:bg-gray-700">
+                <a href={`/cart/${userId}`}>
+                  <i className="fas fa-shopping-cart"></i>
+                </a>
+              </Button>
+              <Button variant="default" className="hover:bg-gray-700">
+                <a href={`/order/${userId}`}>
+                  <i className="fa-solid fa-truck-fast"></i>
+                </a>
+              </Button>
+            </>
           ) : (
             <>
               <Button variant="destructive" className="hover:bg-gray-700">
@@ -127,12 +145,6 @@ const Navbar: React.FC = () => {
               </Button>
             </>
           )}
-
-          <Button variant="default" className="hover:bg-gray-700">
-            <a href="/cart">
-              <i className="fas fa-shopping-cart"></i>
-            </a>
-          </Button>
         </div>
       </motion.div>
     </header>

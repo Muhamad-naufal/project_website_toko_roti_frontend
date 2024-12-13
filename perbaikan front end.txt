@@ -1,13 +1,11 @@
 perbaikan front end user
-1. urutkan produk menurut yang terbaru
-2. buat autentikasi untuk register untuk password harus ada huruf besar, 8 karakter, ada angkanya
-3. buat autentikasi untuk login untuk password membaca besar atau kecil hurufnya
-4. buat halaman search roti
-5. fungsikan search nya
-6. buat dibawah cart adalah status orderan
-7. middleware
-8. buatkan filter produk
-9. saat klik logo cart di navbar, sebelum login, tidak bisa
+1. urutkan produk menurut yang terbaru (Done)
+2. buat autentikasi untuk register untuk password harus ada huruf besar, 8 karakter, ada angkanya (Done)
+3. buat autentikasi untuk login untuk password membaca besar atau kecil hurufnya (Done)
+4. buat dibawah cart adalah status orderan
+5. middleware (Done)
+6. buatkan filter produk (Done)
+7. saat klik logo cart di navbar, sebelum login, tidak bisa (Done)
 
 perbaikan front end admin
 1. buat search data roti
@@ -15,3 +13,4 @@ perbaikan front end admin
 3. buat paginasi untuk orderan
 4. buat filter untuk produk
 5. buat filter untuk orderan
+6. di bagian orderan kolom status, buat seperti dropdown, agar bisa update status

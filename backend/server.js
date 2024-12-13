@@ -149,8 +149,6 @@ app.get("/api/products/search", async (req, res) => {
   }
 });
 
-// Other routes or middlewares
-
 // Endpoint untuk memunculkan semua produk admin
 app.get("/api/products/all", (req, res) => {
   const query = "SELECT * FROM products";
@@ -227,6 +225,18 @@ app.post("/api/register", async (req, res) => {
     if (results.length > 0) {
       return res.status(400).json({ message: "Email already in use" });
     }
+
+    // Check if the name already exists
+    const checkNameQuery = "SELECT * FROM users WHERE name = ?";
+    db.query(checkNameQuery, [name], async (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: "Database error" });
+      }
+
+      if (results.length > 0) {
+        return res.status(400).json({ message: "Name already in use" });
+      }
+    });
 
     // Hash the password
     const hashedPassword = await hashPassword(password);
@@ -480,16 +490,52 @@ app.get("/api/order/count", (req, res) => {
   });
 });
 
-// Endpoint untuk mengambil data orderan
-app.get("/api/order", (req, res) => {
-  const query =
-    "SELECT u.name, p.name as product_name, oi.quantity, o.total_price, o.status FROM orders as o JOIN users as u ON o.user_id = u.id JOIN order_items as oi ON o.id = oi.order_id JOIN products as p ON oi.product_id = p.id";
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Database query error:", err);
-      return res.status(500).json({ message: "Error fetching orders" });
-    }
+// Endpoint untuk mengambil semua data orderan
+app.get("/api/order", async (req, res) => {
+  const query = `
+    SELECT 
+      u.name AS user_name, 
+      p.name AS product_name, 
+      oi.quantity, 
+      o.total_price, 
+      o.status 
+    FROM 
+      orders AS o 
+      JOIN users AS u ON o.user_id = u.id 
+      JOIN order_items AS oi ON o.id = oi.order_id 
+      JOIN products AS p ON oi.product_id = p.id
+  `;
+
+  try {
+    const [results] = await db.promise().query(query);
     res.json(results);
+  } catch (err) {
+    console.error("Database query error:", err);
+    res.status(500).json({ message: "Error fetching orders" });
+  }
+});
+
+// Endpoint untuk menampilkan orderan user
+app.get("/api/order/user", (req, res) => {
+  const userId = req.cookies.user_id; // Get user_id from cookies
+  console.log("Cookies in backend:", req.cookies); // Debugging cookies
+  console.log("User ID from cookies:", userId); // Debugging user_id
+
+  if (!userId) {
+    return res.status(401).json({ message: "User not found." });
+  }
+
+  const query = `SELECT orders.*, order_items.*, products.name as product_name, products.price, products.image_url
+                  FROM orders Join order_items ON orders.id = order_items.order_id join products ON order_items.product_id = products.id
+                 WHERE user_id = ${userId}`;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error fetching cart" });
+    } else {
+      res.json(results);
+    }
   });
 });
 

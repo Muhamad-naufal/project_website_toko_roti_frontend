@@ -134,7 +134,7 @@ const Recommended: React.FC = () => {
                   color="yellow"
                   className="text-gray-800 py-2 px-4 rounded-md transition duration-300 hover:bg-yellow-600"
                 >
-                  <Link to={`/product/${product.id}`}>
+                  <Link to={`/products/${product.id}`}>
                     <i className="fa-solid fa-eye"></i>
                   </Link>
                 </Button>

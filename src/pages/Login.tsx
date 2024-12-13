@@ -7,14 +7,37 @@ import Cookies from "js-cookie";
 // Pastikan kamu sudah menginstal js-cookie
 
 const Login = () => {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData({ ...formData, [id]: value });
+  };
+
+  const validatePassword = (password: string) => {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    return passwordRegex.test(password);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const { email, password } = formData;
+
+    if (!validatePassword(password)) {
+      Swal.fire(
+        "Gagal",
+        "Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka.",
+        "error"
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -94,8 +117,8 @@ const Login = () => {
               <motion.input
                 type="email"
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-md focus:outline-none"
                 required
                 whileFocus={{ scale: 1.05 }}
@@ -111,8 +134,8 @@ const Login = () => {
               <motion.input
                 type="password"
                 id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-md focus:outline-none"
                 required
                 whileFocus={{ scale: 1.05 }}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
+import Cookies from "js-cookie";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
@@ -65,7 +66,6 @@ const Cart = () => {
             console.error("Error updating quantity:", error);
           });
       }
-
       return updatedItems;
     });
   };
@@ -123,7 +123,6 @@ const Cart = () => {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Keranjangmu</h1>
-
       <motion.div
         className="space-y-4"
         initial={{ opacity: 0, y: 20 }}

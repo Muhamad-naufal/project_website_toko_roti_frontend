@@ -5,35 +5,69 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
-  const [name, setName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
+  // Update form data
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  // Validate password
+  interface ValidatePassword {
+    (password: string): boolean;
+  }
+
+  const validatePassword: ValidatePassword = (password) => {
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    return passwordRegex.test(password);
+  };
+
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
+    setError(null);
+
+    if (!validatePassword(formData.password)) {
+      Swal.fire(
+        "Gagal",
+        "Password harus minimal 8 karakter, mengandung 1 huruf besar, dan angka.",
+        "error"
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
+      const response: Response = await fetch(
+        "http://localhost:5000/api/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
 
       if (!response.ok) {
-        const data = await response.json();
+        const data: { message: string } = await response.json();
         setError(data.message);
-        setLoading(false);
         return;
       }
 
-      const data = await response.json();
+      const data: { userId: string } = await response.json();
       console.log("User ID:", data.userId); // Log the user ID
 
       Swal.fire("Berhasil", "Anda berhasil Mendaftar!", "success");
@@ -42,6 +76,7 @@ const Register = () => {
       console.error("Error during registration:", error);
       setError("Terjadi kesalahan. Coba lagi.");
       Swal.fire("Gagal", "Terjadi kesalahan. Coba lagi.", "error");
+    } finally {
       setLoading(false);
     }
   };
@@ -68,8 +103,9 @@ const Register = () => {
               <input
                 type="text"
                 id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
                 className="w-full p-3 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 placeholder="Enter your name"
                 required
@@ -85,8 +121,9 @@ const Register = () => {
               <input
                 type="email"
                 id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
                 className="w-full p-3 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 placeholder="Enter your email"
                 required
@@ -102,8 +139,9 @@ const Register = () => {
               <input
                 type="password"
                 id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
                 className="w-full p-3 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 placeholder="Enter your password"
                 required
@@ -131,9 +169,7 @@ const Register = () => {
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-        >
-          {/* Optional: Add any additional content here */}
-        </motion.div>
+        ></motion.div>
       </div>
     </div>
   );
