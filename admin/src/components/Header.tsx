@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             className="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 hidden md:block"
             onClick={() => alert("Logout clicked")}
           >
-            Logout
+            <i className="fa-solid fa-right-from-bracket"></i>
           </button>
         </div>
       </div>

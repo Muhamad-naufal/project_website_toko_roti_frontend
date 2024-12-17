@@ -2,17 +2,13 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { FaPen, FaTrashAlt, FaPlus } from "react-icons/fa";
 
-const Produk = () => {
-  interface Product {
+const CategoryList = () => {
+  interface Category {
     id: number;
-    name: string;
     nama_category: string;
-    description: string;
-    price: number;
-    stock: number;
   }
 
-  const [products, setProducts] = useState<Product[]>([]); // Initializing as an empty array
+  const [category, setCategory] = useState<Category[]>([]); // Initializing as an empty array
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -22,15 +18,12 @@ const Produk = () => {
   const itemsPerPage = 10;
 
   // Filter products based on search query
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.nama_category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = category.filter((category) =>
+    category.nama_category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Safely calculate totalPages with a null check for products
-  const totalPages = products
+  const totalPages = category
     ? Math.ceil(filteredProducts.length / itemsPerPage)
     : 0;
 
@@ -39,16 +32,16 @@ const Produk = () => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:5000/api/products/all");
+        const response = await fetch("http://localhost:5000/api/categories");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         console.log(data); // Pastikan data yang diterima sesuai
-        setProducts(data); // Jika data sudah berbentuk array langsung, langsung gunakan data
+        setCategory(data); // Jika data sudah berbentuk array langsung, langsung gunakan data
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
-        console.error("Error fetching product data:", err);
+        console.error("Error fetching category data:", err);
       } finally {
         setLoading(false);
       }
@@ -61,7 +54,7 @@ const Produk = () => {
   const deleteProduct = async (id: number) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/products/delete/${id}`,
+        `http://localhost:5000/api/categories/delete/${id}`,
         {
           method: "DELETE",
         }
@@ -72,8 +65,8 @@ const Produk = () => {
           result.error || `HTTP error! status: ${response.status}`
         );
       }
-      setProducts((prevProducts) =>
-        prevProducts.filter((product) => product.id !== id)
+      setCategory((prevCategory) =>
+        prevCategory.filter((category) => category.id !== id)
       );
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -103,14 +96,14 @@ const Produk = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-2xl font-bold text-gray-800">Produk</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Category</h1>
         <motion.button
           className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <a href="/add-product">
+          <a href="/add-category">
             <FaPlus className="text-xl" />
           </a>
         </motion.button>
@@ -120,7 +113,7 @@ const Produk = () => {
       <div className="mb-4">
         <input
           type="text"
-          placeholder="Cari produk..."
+          placeholder="Cari category..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
@@ -136,37 +129,20 @@ const Produk = () => {
         <table className="min-w-full table-auto">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-4 text-left">Nama Produk</th>
-              <th className="p-4 text-left">Kategori</th>
-              <th className="p-4 text-left">Deskripsi</th>
-              <th className="p-4 text-left">Harga</th>
-              <th className="p-4 text-left">Stok</th>
+              <th className="p-4 text-left">Nama Category</th>
               <th className="p-4 text-left">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {currentItems.map((product) => (
+            {currentItems.map((category) => (
               <motion.tr
-                key={product.id}
+                key={category.id}
                 className="border-b hover:bg-gray-50"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
               >
-                <td className="p-4">{product.name}</td>
-                <td className="p-4">{product.nama_category}</td>
-                <td className="p-4">
-                  {product.description.length > 50
-                    ? product.description.substring(0, 50) + "..."
-                    : product.description}
-                </td>
-                <td className="p-4">
-                  {new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                  }).format(product.price)}
-                </td>
-                <td className="p-4">{product.stock}</td>
+                <td className="p-4">{category.nama_category}</td>
                 <td className="p-4">
                   <div className="flex gap-2">
                     <motion.button
@@ -175,7 +151,7 @@ const Produk = () => {
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <a href={`/edit-product/${product.id}`}>
+                      <a href={`/edit-category/${category.id}`}>
                         <FaPen />
                       </a>
                     </motion.button>
@@ -184,7 +160,7 @@ const Produk = () => {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.3 }}
-                      onClick={() => deleteProduct(product.id)}
+                      onClick={() => deleteProduct(category.id)}
                     >
                       <FaTrashAlt />
                     </motion.button>
@@ -216,4 +192,4 @@ const Produk = () => {
   );
 };
 
-export default Produk;
+export default CategoryList;

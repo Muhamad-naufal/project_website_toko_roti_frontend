@@ -30,11 +30,7 @@ const Login = () => {
     const { email, password } = formData;
 
     if (!validatePassword(password)) {
-      Swal.fire(
-        "Gagal",
-        "Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka.",
-        "error"
-      );
+      Swal.fire("Gagal", "Email dan Password tidak sesuai", "error");
       return;
     }
 

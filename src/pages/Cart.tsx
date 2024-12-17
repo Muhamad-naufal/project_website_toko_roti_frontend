@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
-import Cookies from "js-cookie";
+import Swal from "sweetalert2";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
@@ -11,6 +11,7 @@ const Cart = () => {
 
   interface CartItem {
     id: number;
+    product_id: number;
     name: string;
     price: number;
     quantity: number;
@@ -31,43 +32,60 @@ const Cart = () => {
     0
   );
 
-  const updateQuantity = (itemId: number, increment: boolean) => {
-    // Update cartItems state
-    setCartItems((prevItems) => {
-      const updatedItems = prevItems.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              quantity: increment
-                ? item.quantity + 1
-                : item.quantity > 1
-                ? item.quantity - 1
-                : item.quantity, // Prevent quantity from going below 1
-            }
-          : item
+  const updateQuantity = async (product_id: number, increment: boolean) => {
+    try {
+      // Fetch the latest stock from the backend
+      const stockResponse = await fetch(
+        `http://localhost:5000/api/products/${product_id}/stock`
       );
+      console.log(product_id);
 
-      // Find the updated item
-      const updatedItem = updatedItems.find((item) => item.id === itemId);
-      if (updatedItem) {
-        fetch(`http://localhost:5000/api/cart/${updatedItem.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ quantity: updatedItem.quantity }),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error("Failed to update quantity");
-            }
-          })
-          .catch((error) => {
-            console.error("Error updating quantity:", error);
-          });
+      if (!stockResponse.ok) {
+        throw new Error("Failed to fetch product stock");
       }
-      return updatedItems;
-    });
+
+      const { stock } = await stockResponse.json();
+
+      setCartItems((prevItems) => {
+        const updatedItems = prevItems.map((item) => {
+          if (item.id === product_id) {
+            const newQuantity = increment
+              ? item.quantity + 1
+              : item.quantity > 1
+              ? item.quantity - 1
+              : item.quantity;
+
+            // Check if new quantity exceeds the stock
+            if (newQuantity > stock) {
+              Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Stok barang tidak mencukupi!",
+              });
+              return item; // Prevent updates
+            }
+
+            // Update quantity on the server
+            fetch(`http://localhost:5000/api/cart/${product_id}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ quantity: newQuantity }),
+            }).catch((error) =>
+              console.error("Error updating quantity on server:", error)
+            );
+
+            return { ...item, quantity: newQuantity };
+          }
+          return item;
+        });
+
+        return updatedItems;
+      });
+    } catch (error) {
+      console.error("Error fetching or updating stock:", error);
+    }
   };
 
   const removeFromCart = async (itemId: number) => {
@@ -124,7 +142,7 @@ const Cart = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Keranjangmu</h1>
       <motion.div
-        className="space-y-4"
+        className="space-y-6 bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl shadow-lg"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
@@ -133,24 +151,26 @@ const Cart = () => {
           cartItems.map((item) => (
             <motion.div
               key={item.id}
-              className="flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-md"
+              className="flex items-center justify-between bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300"
               whileHover={{ scale: 1.02 }}
             >
               <div className="flex items-center gap-4">
                 <img
                   src={`../../backend${item.image_url}`}
                   alt={item.name}
-                  className="w-20 h-20 rounded-md object-cover"
+                  className="w-20 h-20 rounded-lg object-cover border border-gray-300"
                 />
                 <div>
-                  <h2 className="text-xl font-semibold">{item.name}</h2>
-                  <p className="text-gray-600">
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    {item.name}
+                  </h2>
+                  <p className="text-gray-500">
                     Harga: {formatCurrency(item.price)}
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-3 mt-3">
                     <button
                       onClick={() => updateQuantity(item.id, false)}
-                      className="p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+                      className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors duration-200"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -167,10 +187,10 @@ const Cart = () => {
                         />
                       </svg>
                     </button>
-                    <p>{item.quantity}</p>
+                    <p className="font-medium text-gray-800">{item.quantity}</p>
                     <button
                       onClick={() => updateQuantity(item.id, true)}
-                      className="p-2 bg-gray-200 rounded-full hover:bg-gray-300"
+                      className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors duration-200"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -191,8 +211,8 @@ const Cart = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <p className="font-bold text-xl mt-2 me-4">
+              <div className="flex items-center gap-4">
+                <p className="font-bold text-xl text-gray-700">
                   {formatCurrency(item.price * item.quantity)}
                 </p>
                 <Button
@@ -203,7 +223,7 @@ const Cart = () => {
                     setItemToDelete(item.id);
                     setShowModal(true);
                   }}
-                  className="text-red-500 hover:text-red-700 text-xl items-center p-5 rounded-lg"
+                  className="text-red-500 hover:text-red-700 text-xl p-3 rounded-lg transition-colors duration-200"
                 >
                   <i className="fa-solid fa-trash"></i>
                 </Button>
@@ -211,28 +231,34 @@ const Cart = () => {
             </motion.div>
           ))
         ) : (
-          <div className="text-center py-10">
-            <h2 className="text-2xl font-semibold mb-4">
-              Keranjang belanja kamu kosong
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Ayo tambahkan roti favoritmu ke keranjang!
+          <div className="flex flex-col items-center justify-center py-20 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl shadow-lg">
+            <img
+              src="/empty.png"
+              alt="Empty State"
+              className="w-[300px] h-[300px] mb-6 transform hover:scale-105 transition-transform duration-300"
+            />
+            <p className="text-white font-bold text-lg mb-6">
+              Keranjang Anda Kosong
             </p>
             <Button
               variant="default"
-              className="hover:bg-gray-800"
+              className="bg-white text-blue-600 hover:bg-blue-600 hover:text-white px-6 py-3 rounded-full border border-gray-300 transition-colors duration-300"
               onClick={() => (window.location.href = "/")}
             >
-              Belanja Sekarang
+              Kembali ke Beranda
             </Button>
           </div>
         )}
 
-        <div className="flex justify-between items-center mt-4">
-          <h2 className="text-2xl font-bold">
+        <div className="flex justify-between items-center mt-6">
+          <h2 className="text-2xl font-bold text-gray-800">
             Total: {formatCurrency(totalPrice)}
           </h2>
-          <Button variant="default" className="hover:bg-gray-800">
+          <Button
+            variant="default"
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300"
+          >
+            <i className="fa-solid fa-credit-card"></i>
             Checkout
           </Button>
         </div>

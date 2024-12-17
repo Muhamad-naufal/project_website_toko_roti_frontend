@@ -6,7 +6,9 @@ import Swal from "sweetalert2";
 const AddProduct = () => {
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null); // Preview image state
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<
+    { id: string; nama_category: string }[]
+  >([]);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -21,10 +23,9 @@ const AddProduct = () => {
       try {
         const response = await fetch("http://localhost:5000/api/categories");
         const data = await response.json();
-        const cleanedCategories = data.map((category: string) =>
-          category.trim().replace(/['"]/g, "")
-        );
-        setCategories(cleanedCategories);
+        if (data) {
+          setCategories(data); // Mengupdate state categories
+        }
       } catch (error) {
         console.error("Error fetching categories:", error);
       }
@@ -249,10 +250,10 @@ const AddProduct = () => {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           >
-            <option value="">Plih Kategori</option>
+            <option value="">Pilih Kategori</option>
             {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
+              <option key={category.id} value={category.id}>
+                {category.nama_category}
               </option>
             ))}
           </select>

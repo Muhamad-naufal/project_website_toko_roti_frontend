@@ -12,13 +12,15 @@ interface Product {
   price: number;
   image_url: string;
   description: string;
+  stock: number; // Tambahkan stok produk
 }
 
 const SingleProduct: React.FC = () => {
-  const { id } = useParams<{ id: string }>(); // Get the product id from the route
+  const { id } = useParams<{ id: string }>(); // Ambil ID produk dari route
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
 
+  // Ambil data produk berdasarkan ID
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -27,7 +29,7 @@ const SingleProduct: React.FC = () => {
         );
         const data = await response.json();
         if (response.ok) {
-          setProduct(data); // Set the fetched product
+          setProduct(data); // Set data produk termasuk stok
         } else {
           console.error("Error fetching product:", data.message);
         }
@@ -37,17 +39,27 @@ const SingleProduct: React.FC = () => {
     };
 
     fetchProduct();
-  }, [id]); // Trigger re-fetch when the id changes
+  }, [id]);
 
+  // Tambahkan kuantitas produk
   const handleIncreaseQuantity = () => {
-    setQuantity((prev) => prev + 1);
+    if (product && quantity < product.stock) {
+      setQuantity((prev) => prev + 1);
+    } else {
+      Swal.fire({
+        icon: "warning",
+        title: "Stok Habis",
+        text: "Jumlah tidak boleh melebihi stok yang tersedia.",
+      });
+    }
   };
 
+  // Kurangi kuantitas produk
   const handleDecreaseQuantity = () => {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
   };
 
-  // Format the price to IDR currency
+  // Format harga ke mata uang IDR
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -64,7 +76,7 @@ const SingleProduct: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          {/* Product Image */}
+          {/* Gambar Produk */}
           <motion.div
             className="w-full md:w-1/2"
             initial={{ opacity: 0, x: -100 }}
@@ -78,7 +90,7 @@ const SingleProduct: React.FC = () => {
             />
           </motion.div>
 
-          {/* Product Details */}
+          {/* Detail Produk */}
           <motion.div
             className="w-full md:w-1/2 space-y-6"
             initial={{ opacity: 0, x: 100 }}
@@ -90,8 +102,12 @@ const SingleProduct: React.FC = () => {
             <p className="text-xl font-semibold text-yellow-500">
               {formatPrice(product.price)}
             </p>
+            <p className="text-gray-500">
+              Stok tersedia:{" "}
+              <span className="font-semibold">{product.stock}</span>
+            </p>
 
-            {/* Quantity Selector */}
+            {/* Selector Kuantitas */}
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
@@ -110,12 +126,21 @@ const SingleProduct: React.FC = () => {
               </Button>
             </div>
 
-            {/* Add to Cart Button */}
+            {/* Tombol Tambah ke Keranjang */}
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="default"
                 className="w-full md:w-auto"
                 onClick={async () => {
+                  if (product && quantity > product.stock) {
+                    Swal.fire({
+                      icon: "warning",
+                      title: "Stok Tidak Cukup",
+                      text: "Jumlah yang dipilih melebihi stok yang tersedia.",
+                    });
+                    return;
+                  }
+
                   try {
                     const response = await fetch(
                       "http://localhost:5000/api/cart/add",
@@ -124,10 +149,10 @@ const SingleProduct: React.FC = () => {
                         headers: {
                           "Content-Type": "application/json",
                         },
-                        credentials: "include", // To send cookies
+                        credentials: "include", // Mengirim cookies
                         body: JSON.stringify({
                           productId: product.id,
-                          quantity: quantity, // Send the selected quantity
+                          quantity: quantity,
                         }),
                       }
                     );

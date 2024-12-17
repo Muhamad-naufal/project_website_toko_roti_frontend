@@ -1,62 +1,47 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
+import { motion } from "framer-motion";
 
-const EditProduct = () => {
+const EditProduct = ({
+  categories: initialCategories,
+}: {
+  categories: { id: string; nama_category: string }[];
+}) => {
   const { id } = useParams<{ id: string }>();
+  const [categories, setCategories] = useState<
+    { id: string; nama_category: string }[]
+  >(initialCategories || []); // Initialize categories to an empty array if undefined
+
   const [product, setProduct] = useState({
-    name: "",
-    description: "",
-    price: "",
-    stock: "",
-    category: "",
+    id: id,
+    name: "", // Default to empty string instead of undefined
+    nama_category: "", // Default to empty string instead of undefined
+    description: "", // Default to empty string instead of undefined
+    price: "", // Default to empty string instead of undefined
+    stock: "", // Default to empty string instead of undefined
+    category_id: "", // Default to empty string instead of undefined
   });
+
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/categories");
+        const response = await fetch(`http://localhost:5000/api/categories`);
         const data = await response.json();
-        const cleanedCategories = data.map((category: string) =>
-          category.trim().replace(/['"]/g, "")
-        );
-        setCategories(cleanedCategories);
+        console.log("Categories API Response:", data);
+
+        setCategories(Array.isArray(data) ? data : [data]);
       } catch (error) {
         console.error("Error fetching categories:", error);
       }
     };
 
     fetchCategories();
-  }, []);
-
-  const handleImageUpload = (file: File) => {
-    if (file) {
-      setImage(file);
-      const reader = new FileReader();
-      reader.onload = () => setPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy"; // Indicate a copy action
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0]; // Get the first file dropped
-    if (file) handleImageUpload(file);
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleImageUpload(file);
-  };
+  }, [id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,11 +52,13 @@ const EditProduct = () => {
         const data = await response.json();
         if (response.ok) {
           setProduct({
-            name: data.name,
-            description: data.description,
-            price: data.price,
-            stock: data.stock,
-            category: data.category,
+            id: data.id,
+            name: data.name || "", // Ensure it's never undefined
+            nama_category: data.nama_category || "", // Ensure it's never undefined
+            description: data.description || "", // Ensure it's never undefined
+            price: data.price || "", // Ensure it's never undefined
+            stock: data.stock || "", // Ensure it's never undefined
+            category_id: data.category_id || "", // Ensure it's never undefined
           });
           if (data.image) {
             setPreview(data.image); // Assuming the API returns the image URL
@@ -86,31 +73,8 @@ const EditProduct = () => {
     fetchData();
   }, [id]);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setProduct((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validasi sederhana
-    if (
-      !product.name ||
-      !product.price ||
-      !product.stock ||
-      !product.category
-    ) {
-      alert("All fields are required except image!");
-      return;
-    }
-
     setIsLoading(true);
 
     const formData = new FormData();
@@ -118,7 +82,7 @@ const EditProduct = () => {
     formData.append("description", product.description);
     formData.append("price", product.price);
     formData.append("stock", product.stock);
-    formData.append("category", product.category);
+    formData.append("category", product.category_id);
     if (image) formData.append("image", image);
 
     try {
@@ -172,13 +136,33 @@ const EditProduct = () => {
           </label>
           <div
             className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files[0];
+              if (file) {
+                setImage(file);
+                const reader = new FileReader();
+                reader.onload = () => setPreview(reader.result as string);
+                reader.readAsDataURL(file);
+              }
+            }}
           >
             <input
               type="file"
               accept="image/*"
-              onChange={handleFileInput}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setImage(file);
+                  const reader = new FileReader();
+                  reader.onload = () => setPreview(reader.result as string);
+                  reader.readAsDataURL(file);
+                }
+              }}
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
             {!preview ? (
@@ -227,7 +211,9 @@ const EditProduct = () => {
             type="text"
             name="name"
             value={product.name}
-            onChange={handleInputChange}
+            onChange={(e) =>
+              setProduct((prev) => ({ ...prev, name: e.target.value }))
+            }
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           />
         </div>
@@ -240,7 +226,9 @@ const EditProduct = () => {
           <textarea
             name="description"
             value={product.description}
-            onChange={handleInputChange}
+            onChange={(e) =>
+              setProduct((prev) => ({ ...prev, description: e.target.value }))
+            }
             rows={4}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           ></textarea>
@@ -256,7 +244,9 @@ const EditProduct = () => {
               type="number"
               name="price"
               value={product.price}
-              onChange={handleInputChange}
+              onChange={(e) =>
+                setProduct((prev) => ({ ...prev, price: e.target.value }))
+              }
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
@@ -268,7 +258,9 @@ const EditProduct = () => {
               type="number"
               name="stock"
               value={product.stock}
-              onChange={handleInputChange}
+              onChange={(e) =>
+                setProduct((prev) => ({ ...prev, stock: e.target.value }))
+              }
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
             />
           </div>
@@ -279,33 +271,28 @@ const EditProduct = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Category
           </label>
-          {/* // Kode bagian dropdown category */}
           <select
             name="category"
-            value={product.category}
-            onChange={handleInputChange}
+            value={product.category_id}
+            onChange={(e) =>
+              setProduct((prev) => ({ ...prev, category_id: e.target.value }))
+            }
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-blue-300"
           >
-            <option value="">Select Category</option>
-            {[
-              product.category, // Tambahkan kategori yang di-fetch di urutan pertama
-              ...categories.filter((category) => category !== product.category), // Sisanya tanpa duplikasi
-            ].map((category) => (
-              <option key={category} value={category}>
-                {category}
+            <option value="">Select a category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.nama_category}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Submit Button */}
-        <div>
+        <div className="mt-4">
           <button
             type="submit"
-            className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring ${
-              isLoading
-                ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                : "bg-blue-500 text-white hover:bg-blue-600"
+            className={`w-full py-2 px-4 bg-blue-600 text-white rounded-lg focus:outline-none focus:ring focus:ring-blue-300 ${
+              isLoading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isLoading}
           >

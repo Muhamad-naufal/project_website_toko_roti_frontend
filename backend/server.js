@@ -151,7 +151,8 @@ app.get("/api/products/search", async (req, res) => {
 
 // Endpoint untuk memunculkan semua produk admin
 app.get("/api/products/all", (req, res) => {
-  const query = "SELECT * FROM products";
+  const query =
+    "SELECT p.*, c.nama_category FROM products as p join category as c on p.category_id = c.id";
   db.query(query, (err, results) => {
     if (err) {
       console.error(err);
@@ -161,26 +162,10 @@ app.get("/api/products/all", (req, res) => {
   });
 });
 
-// Endpoint untuk mendapatkan kategori
-app.get("/api/categories", (req, res) => {
-  const query = "SHOW COLUMNS FROM products LIKE 'category'";
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error(err);
-      res.status(500).json({ message: "Error fetching categories" });
-    } else {
-      const enumValues = results[0].Type.replace("enum(", "")
-        .replace(")", "")
-        .split(",")
-        .map((value) => value.replace("'", "").trim());
-      res.json(enumValues);
-    }
-  });
-});
-
 // const untuk mendapatkan produk berdasarkan ID
 const getProductById = (productId, callback) => {
-  const query = "SELECT * FROM products WHERE id = ?"; // Query to fetch the product by ID
+  const query =
+    "SELECT p.*, c.nama_category FROM products as p join category as c on p.category_id = c.id WHERE p.id = ?"; // Query to fetch the product by ID
   db.query(query, [productId], (err, results) => {
     if (err) {
       console.error("Error fetching product:", err);
@@ -493,22 +478,61 @@ app.get("/api/order/count", (req, res) => {
 // Endpoint untuk mengambil semua data orderan
 app.get("/api/order", async (req, res) => {
   const query = `
-    SELECT 
-      u.name AS user_name, 
-      p.name AS product_name, 
-      oi.quantity, 
-      o.total_price, 
-      o.status 
-    FROM 
-      orders AS o 
-      JOIN users AS u ON o.user_id = u.id 
-      JOIN order_items AS oi ON o.id = oi.order_id 
-      JOIN products AS p ON oi.product_id = p.id
-  `;
+  SELECT 
+    o.id AS order_id,
+    u.name AS user_name, 
+    p.name AS product_name, 
+    oi.quantity, 
+    oi.price, 
+    o.total_price, 
+    oi.status, 
+    o.created_at
+  FROM 
+    orders AS o 
+    JOIN users AS u ON o.user_id = u.id 
+    JOIN order_items AS oi ON o.id = oi.order_id 
+    JOIN products AS p ON oi.product_id = p.id
+    ORDER BY o.created_at DESC
+`;
 
   try {
     const [results] = await db.promise().query(query);
-    res.json(results);
+
+    // Ensure data is an array and properly structured
+    const groupedOrders = results.reduce((acc, row) => {
+      const {
+        order_id,
+        user_name,
+        product_name,
+        quantity,
+        price,
+        total_price,
+        status,
+        created_at, // We now include created_at in the order data
+      } = row;
+
+      if (!acc[order_id]) {
+        acc[order_id] = {
+          id: order_id,
+          user_name,
+          totalPrice: total_price,
+          status,
+          items: [],
+          created_at, // Include created_at in the order data
+        };
+      }
+
+      acc[order_id].items.push({
+        product_name,
+        quantity,
+        price,
+      });
+
+      return acc;
+    }, {});
+
+    // Convert groupedOrders object to an array before sending
+    res.json(Object.values(groupedOrders)); // This should be an array
   } catch (err) {
     console.error("Database query error:", err);
     res.status(500).json({ message: "Error fetching orders" });
@@ -568,21 +592,27 @@ const upload = multer({ storage: storage });
 // Endpoint untuk menambahkan produk dengan gambar
 app.post("/api/products/add", upload.single("image"), (req, res) => {
   console.log(req.body); // Untuk debugging
-  const { name, description, price, stock, category } = req.body;
+
+  const { name, description, price, stock, category } = req.body; // Ganti 'category' menjadi 'category_id'
   const image = req.file ? req.file.filename : null; // Mendapatkan nama file gambar
 
+  // Validasi input
   if (!name || !description || !price || !stock || !category || !image) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
+  // Query untuk menambahkan produk ke tabel products
   const sql =
-    "INSERT INTO products (name, description, price, stock, category, image_url) VALUES (?, ?, ?, ?, ?, ?)";
+    "INSERT INTO products (name, description, price, stock, category_id, image_url) VALUES (?, ?, ?, ?, ?, ?)";
   db.query(
     sql,
-    [name, description, price, stock, category, `/uploads/${image}`], // Menyimpan path gambar
+    [name, description, price, stock, category, `/uploads/${image}`], // Gunakan 'category_id'
     (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id: results.insertId });
+      if (err) {
+        console.error(err); // Log error untuk debugging
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true, id: results.insertId }); // Kembalikan ID produk yang baru ditambahkan
     }
   );
 });
@@ -590,8 +620,13 @@ app.post("/api/products/add", upload.single("image"), (req, res) => {
 // Endpoint untuk mengupdate produk
 app.put("/api/products/update/:id", upload.single("image"), (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock, category } = req.body;
+  const { name, description, price, stock, category } = req.body; // Tangkap "name_product"
   const image = req.file ? req.file.filename : null;
+
+  // Validasi input
+  if (!name || !description || !price || !stock || !category) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
 
   // Query untuk mendapatkan URL gambar lama
   const getImageQuery = `SELECT image_url FROM products WHERE id = ?`;
@@ -604,16 +639,14 @@ app.put("/api/products/update/:id", upload.single("image"), (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    // Jika ada hasil, ambil URL gambar lama
+    // Ambil URL gambar lama dan tentukan gambar yang akan disimpan
     const previousImageUrl = results[0].image_url;
-
-    // Gunakan gambar lama jika gambar baru tidak diunggah
     const imageUrl = image ? `/uploads/${image}` : previousImageUrl;
 
     // Query untuk mengupdate data produk
     const updateQuery = `
       UPDATE products
-      SET name = ?, description = ?, price = ?, stock = ?, category = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
+      SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
 
@@ -621,9 +654,9 @@ app.put("/api/products/update/:id", upload.single("image"), (req, res) => {
       updateQuery,
       [name, description, price, stock, category, imageUrl, id],
       (updateErr) => {
-        if (updateErr)
+        if (updateErr) {
           return res.status(500).json({ error: updateErr.message });
-
+        }
         res.json({ success: true, message: "Product updated successfully" });
       }
     );
@@ -692,29 +725,132 @@ app.delete("/api/products/delete/:id", (req, res) => {
   });
 });
 
-// Endpoint untuk update status orderan
-
-// Fetch status options
-app.get("/api/status-options", (req, res) => {
-  const statusOptions = ["Pending", "Processing", "Completed", "Cancelled"];
-  res.json(statusOptions);
+// Endpoint untuk menampilkan semua category
+app.get("/api/categories", (req, res) => {
+  const query = "SELECT * FROM category";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching categories" });
+    }
+    res.json(results);
+  });
 });
 
-// Update order status
-app.put("/api/order/:id/status", (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+// Endpoint untuk menambah category
+app.post("/api/categories/add", (req, res) => {
+  const { categoryName } = req.body;
 
-  const query = "UPDATE orders SET status = ? WHERE id = ?";
-  db.query(query, [status, id], (err, result) => {
+  // Check if the category already exists
+  const checkQuery = `SELECT * FROM category WHERE nama_category = ?`;
+  db.query(checkQuery, [categoryName], (err, results) => {
     if (err) {
-      console.error("Error updating status:", err);
-      res.status(500).json({ error: "Failed to update order status." });
-    } else if (result.affectedRows === 0) {
-      res.status(404).json({ error: "Order not found." });
-    } else {
-      res.json({ message: "Order status updated successfully." });
+      console.error(err);
+      return res.status(500).json({ message: "Error checking category" });
     }
+
+    if (results.length > 0) {
+      return res.status(400).json({ message: "Category already exists" });
+    }
+
+    // If category does not exist, insert it
+    const insertQuery = `INSERT INTO category (nama_category) VALUES (?)`;
+    db.query(insertQuery, [categoryName], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error adding category" });
+      }
+      res.json({ message: "Category added successfully" });
+    });
+  });
+});
+
+// Endpoint untuk menampilkan category berdasarkan ID
+app.get("/api/categories/:id", (req, res) => {
+  const { id } = req.params;
+  const query =
+    "SELECT products.name, category.nama_category FROM products LEFT JOIN category ON products.category_id = category.id WHERE products.id = ?;";
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err); // Logging error detail
+      return res.status(500).json({ message: "Error fetching category" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // Format response to include category and products
+    const category = {
+      nama_category: results[0].nama_category,
+      products: results.map((row) => row.nama_produk),
+    };
+
+    res.json(category);
+  });
+});
+
+// Endpoint untuk update category
+app.put("/api/categories/update/:id", (req, res) => {
+  const { id } = req.params;
+  const { nama_category } = req.body;
+
+  if (!nama_category) {
+    return res.status(400).json({ message: "Category name is required" });
+  }
+
+  const query = "UPDATE category SET nama_category = ? WHERE id = ?";
+  db.query(query, [nama_category, id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error updating category" });
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    res.json({ message: "Category updated successfully" });
+  });
+});
+
+// Endpoint untuk menghapus category
+app.delete("/api/categories/delete/:id", (req, res) => {
+  const { id } = req.params;
+  const query = "DELETE FROM category WHERE id = ?";
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error deleting category" });
+    }
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    res.json({ message: "Category deleted successfully" });
+  });
+});
+
+// Route: GET /api/products/:id/stock
+app.get("/api/products/:cart_id/stock", (req, res) => {
+  const { cart_id } = req.params;
+
+  // Query untuk JOIN tabel carts dan products
+  const query = `
+    SELECT p.id AS product_id, p.stock 
+FROM cart_items ci
+JOIN products p ON ci.product_id = p.id
+WHERE ci.id = ?
+
+  `;
+
+  db.query(query, [cart_id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching stock" });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Product not found in cart" });
+    }
+    res.json({ stock: results[0].stock });
   });
 });
 
