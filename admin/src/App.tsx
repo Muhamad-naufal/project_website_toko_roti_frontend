@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   useLocation,
 } from "react-router-dom";
+import Cookies from "js-cookie";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -40,29 +42,43 @@ function MainLayout({
   toggleSidebar: () => void;
 }) {
   const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if the current route is "/login"
+  useEffect(() => {
+    const userId = Cookies.get("admin_id");
+    setIsAuthenticated(!!userId && !isNaN(Number(userId))); // Validasi angka
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Tampilan loading sementara
+  }
+
+  // Redirect to login if not authenticated and not already on the login page
+  if (!isAuthenticated && location.pathname !== "/login") {
+    return <Navigate to="/login" replace />;
+  }
+
   const isLoginPage = location.pathname === "/login";
+
+  if (isAuthenticated && isLoginPage) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="flex h-screen">
-      {/* Render Sidebar and Header only if not on the Login page */}
       {!isLoginPage && (
         <>
-          {/* Sidebar */}
           <SidebarContainer isSidebarOpen={isSidebarOpen} />
-
-          {/* Main Content with Header */}
           <div className="flex-1 flex flex-col">
             <Header onToggleSidebar={toggleSidebar} />
             <div className="flex-1 overflow-y-auto">
-              <RoutesContainer />
+              <RoutesContainer isAuthenticated={isAuthenticated} />
             </div>
           </div>
         </>
       )}
-
-      {/* Login Page */}
       {isLoginPage && (
         <div className="w-full">
           <Routes>
@@ -78,12 +94,9 @@ function MainLayout({
 function SidebarContainer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
   return (
     <>
-      {/* Sidebar for desktop */}
       <div className="hidden md:block">
         <Sidebar isSidebarOpen={isSidebarOpen} />
       </div>
-
-      {/* Sidebar for mobile */}
       <div className="block md:hidden">
         {isSidebarOpen && <Sidebar isSidebarOpen={isSidebarOpen} />}
       </div>
@@ -92,18 +105,55 @@ function SidebarContainer({ isSidebarOpen }: { isSidebarOpen: boolean }) {
 }
 
 // Routes Container Component
-function RoutesContainer() {
+function RoutesContainer({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/produk" element={<Produk />} />
-      <Route path="/orderan" element={<Orderan />} />
-      <Route path="/add-product" element={<AddProduct />} />
-      <Route path="/edit-product/:id" element={<EditProduct />} />
-      <Route path="/add-category" element={<AddCategory />} />
-      <Route path="/category" element={<CategoryList />} />
-      <Route path="/edit-category/:id" element={<EditCategory />} />
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+      />
+      <Route
+        path="/"
+        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/dashboard"
+        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/produk"
+        element={isAuthenticated ? <Produk /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/orderan"
+        element={isAuthenticated ? <Orderan /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/add-product"
+        element={isAuthenticated ? <AddProduct /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/edit-product/:id"
+        element={
+          isAuthenticated ? (
+            <EditProduct categories={[]} />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+      <Route
+        path="/add-category"
+        element={isAuthenticated ? <AddCategory /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/category"
+        element={isAuthenticated ? <CategoryList /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/edit-category/:id"
+        element={isAuthenticated ? <EditCategory /> : <Navigate to="/login" />}
+      />
     </Routes>
   );
 }

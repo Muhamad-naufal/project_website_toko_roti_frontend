@@ -1,11 +1,38 @@
 import { motion } from "framer-motion";
 import React from "react";
+import Swal from "sweetalert2";
+import Cookies from "js-cookie";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
+  const handleLogout = () => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You will be logged out of your account.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, logout",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Hapus cookie user_id
+        Cookies.remove("admin_id");
+        // Redirect ke halaman login
+        window.location.href = "/login";
+        Swal.fire(
+          "Logged out!",
+          "You have been logged out successfully.",
+          "success"
+        );
+      }
+    });
+  };
+
   return (
     <header className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -32,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           {/* Logout Button */}
           <button
             className="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 hidden md:block"
-            onClick={() => alert("Logout clicked")}
+            onClick={handleLogout}
           >
             <i className="fa-solid fa-right-from-bracket"></i>
           </button>

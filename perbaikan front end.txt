@@ -1,12 +1,19 @@
 perbaikan front end user
-1.
+1. tambahkan inputan alamat di register
+2. tambahkan kolom alamat di tabel users
+3. fungsikan sampai masuk ke database alamatnya
 
 perbaikan front end admin
-2. buat Login Admin berfungsi
-3. jika belum login, tidak bisa masuk
+1. buat page kurir
+2. buat page tambah kurir
+3. buat page edit kurir
+4. fungsikan hapus kurir
+5. buat tabel data kurir
 
 perbaikan
+1.
 
 perbaikan front end kurir
 1. buatkan page orderan
 2. buatkan agar bisa ubah status
+3. masukkan tailwind config

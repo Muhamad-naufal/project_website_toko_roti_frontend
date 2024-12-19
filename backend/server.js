@@ -854,6 +854,25 @@ WHERE ci.id = ?
   });
 });
 
+// Endpoint untuk login admin
+app.post("/api/admin/login", (req, res) => {
+  const { user_name, password } = req.body;
+
+  const query = "SELECT * FROM admin WHERE user_name = ? AND password = ?";
+  db.query(query, [user_name, password], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({ message: "Invalid username or password" });
+    }
+
+    res.json({ user_id: results[0].id });
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
