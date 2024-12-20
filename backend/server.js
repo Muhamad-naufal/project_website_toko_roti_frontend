@@ -198,7 +198,7 @@ const hashPassword = async (password) => {
 
 // Register endpoint
 app.post("/api/register", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, alamat } = req.body;
 
   // Check if the email already exists
   const checkEmailQuery = "SELECT * FROM users WHERE email = ?";
@@ -228,16 +228,20 @@ app.post("/api/register", async (req, res) => {
 
     // Insert the new user into the database
     const insertUserQuery =
-      "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
-    db.query(insertUserQuery, [name, email, hashedPassword], (err, results) => {
-      if (err) {
-        return res.status(500).json({ message: "Error registering user" });
-      }
+      "INSERT INTO users (name, email, password, alamat) VALUES (?, ?, ?, ?)";
+    db.query(
+      insertUserQuery,
+      [name, email, hashedPassword, alamat],
+      (err, results) => {
+        if (err) {
+          return res.status(500).json({ message: "Error registering user" });
+        }
 
-      const userId = results.insertId; // Get the newly created user ID
-      console.log("User ID:", userId); // Log the user ID to the console
-      res.status(201).json({ userId }); // Respond with the user ID
-    });
+        const userId = results.insertId; // Get the newly created user ID
+        console.log("User ID:", userId); // Log the user ID to the console
+        res.status(201).json({ userId }); // Respond with the user ID
+      }
+    );
   });
 });
 
@@ -485,7 +489,7 @@ app.get("/api/order", async (req, res) => {
     oi.quantity, 
     oi.price, 
     o.total_price, 
-    oi.status, 
+    o.status, 
     o.created_at
   FROM 
     orders AS o 
@@ -870,6 +874,65 @@ app.post("/api/admin/login", (req, res) => {
     }
 
     res.json({ user_id: results[0].id });
+  });
+});
+
+// Endpoint untuk login kurir
+app.post("/api/kurir/login", (req, res) => {
+  const { user_name, password } = req.body;
+
+  const query = "SELECT * FROM kurir WHERE user_name = ? AND password = ?";
+  db.query(query, [user_name, password], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({ message: "Invalid username or password" });
+    }
+
+    res.json({ user_id: results[0].id });
+  });
+});
+
+// Endpoint untuk menampilkan semua data kurir
+app.get("/api/kurir", (req, res) => {
+  const query = "SELECT * FROM kurir";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching kurir" });
+    }
+    res.json(results);
+  });
+});
+
+// Endpoint untuk menambahkan kurir
+app.post("/api/kurir/add", (req, res) => {
+  const { kurirName, username, password, no_hp } = req.body;
+
+  // Check if the courier already exists
+  const checkQuery = `SELECT * FROM kurir WHERE nama = ?`;
+  db.query(checkQuery, [kurirName], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error checking courier" });
+    }
+
+    if (results.length > 0) {
+      return res.status(400).json({ message: "Courier already exists" });
+    }
+
+    // If courier does not exist, insert it
+    const insertQuery = `INSERT INTO kurir (nama, user_name, password, no_hp) VALUES (?, ?, ?, ?)`;
+    db.query(insertQuery, [kurirName, username, password, no_hp], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error adding courier" });
+      }
+      res.json({ message: "Courier added successfully" });
+    });
   });
 });
 

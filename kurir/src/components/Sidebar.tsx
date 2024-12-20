@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import React from "react";
-import { FaHome, FaBox, FaShoppingCart, FaUser } from "react-icons/fa";
+import { FaHome, FaShoppingCart, FaClock } from "react-icons/fa";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -9,10 +9,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
   const menuItems = [
     { name: "Dashboard", icon: <FaHome />, link: "/dashboard" },
-    { name: "Produk", icon: <FaBox />, link: "/produk" },
-    { name: "Orderan", icon: <FaShoppingCart />, link: "/orderan" },
-    { name: "Kategori", icon: <FaBox />, link: "/category" },
-    { name: "Kurir", icon: <FaUser />, link: "/kurir" },
+    { name: "Order", icon: <FaShoppingCart />, link: "/order" },
+    { name: "History", icon: <FaClock />, link: "/history" },
   ];
 
   return (
@@ -32,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
             isSidebarOpen ? "opacity-100" : "opacity-0"
           }`}
         >
-          Admin Panel
+          Kurir Panel
         </h1>
       </div>
 

@@ -8,6 +8,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    alamat: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
@@ -144,6 +145,24 @@ const Register = () => {
                 onChange={handleChange}
                 className="w-full p-3 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 placeholder="Enter your password"
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="alamat"
+                className="block text-lg font-semibold text-gray-700"
+              >
+                Alamat
+              </label>
+              <input
+                type="alamat"
+                id="alamat"
+                name="alamat"
+                value={formData.alamat}
+                onChange={handleChange}
+                className="w-full p-3 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                placeholder="Enter your Address"
                 required
               />
             </div>
