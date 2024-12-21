@@ -20,6 +20,7 @@ import CategoryList from "./pages/Category";
 import EditCategory from "./pages/EditCategory";
 import Kurir from "./pages/Kurir";
 import AddKurir from "./pages/AddKurir";
+import EditKurir from "./pages/EditKurir";
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -163,6 +164,10 @@ function RoutesContainer({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route
         path="/add-kurir"
         element={isAuthenticated ? <AddKurir /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/edit-kurir/:id"
+        element={isAuthenticated ? <EditKurir /> : <Navigate to="/login" />}
       />
     </Routes>
   );

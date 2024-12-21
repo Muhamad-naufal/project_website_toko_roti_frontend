@@ -35,7 +35,7 @@ const Kurir = () => {
 
   // Fetch data produk
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchKurir = async () => {
       setLoading(true);
       try {
         const response = await fetch("http://localhost:5000/api/kurir");
@@ -53,14 +53,14 @@ const Kurir = () => {
       }
     };
 
-    fetchProducts();
+    fetchKurir();
   }, []);
 
   // Function to delete product
-  const deleteProduct = async (id: number) => {
+  const deleteKurir = async (id: number) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/products/delete/${id}`,
+        `http://localhost:5000/api/kurir/delete/${id}`,
         {
           method: "DELETE",
         }
@@ -143,18 +143,18 @@ const Kurir = () => {
             </tr>
           </thead>
           <tbody>
-            {currentItems.map((product) => (
+            {currentItems.map((kurir) => (
               <motion.tr
-                key={product.id}
+                key={kurir.id}
                 className="border-b hover:bg-gray-50"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
               >
-                <td className="p-4">{product.nama}</td>
-                <td className="p-4">{product.user_name}</td>
-                <td className="p-4">{product.no_hp}</td>
-                <td className="p-4">{product.password}</td>
+                <td className="p-4">{kurir.nama}</td>
+                <td className="p-4">{kurir.user_name}</td>
+                <td className="p-4">{kurir.no_hp}</td>
+                <td className="p-4">{kurir.password}</td>
                 <td className="p-4">
                   <div className="flex gap-2">
                     <motion.button
@@ -163,7 +163,7 @@ const Kurir = () => {
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <a href={`/edit-product/${product.id}`}>
+                      <a href={`/edit-kurir/${kurir.id}`}>
                         <FaPen />
                       </a>
                     </motion.button>
@@ -172,7 +172,7 @@ const Kurir = () => {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.3 }}
-                      onClick={() => deleteProduct(product.id)}
+                      onClick={() => deleteKurir(kurir.id)}
                     >
                       <FaTrashAlt />
                     </motion.button>

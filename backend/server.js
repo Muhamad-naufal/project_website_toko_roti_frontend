@@ -936,6 +936,96 @@ app.post("/api/kurir/add", (req, res) => {
   });
 });
 
+// Endpoint untuk menampilkan kurir berdasarkan ID
+app.get("/api/kurir/:id", (req, res) => {
+  const { id } = req.params;
+  console.log("ID received:", id); // Tambahkan log
+  const query = "SELECT * FROM kurir WHERE id = ?";
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Error fetching courier" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Courier not found" });
+    }
+
+    res.json(results[0]);
+  });
+});
+
+// Endpoint untuk mengupdate kurir
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 1000; // 1 second
+
+const updateCourierWithRetry = async (query, params, retries = 0) => {
+  return new Promise((resolve, reject) => {
+    db.query(query, params, (err, results) => {
+      if (err) {
+        if (err.code === "ER_LOCK_WAIT_TIMEOUT" && retries < MAX_RETRIES) {
+          console.log(
+            `Lock wait timeout exceeded. Retrying (${
+              retries + 1
+            }/${MAX_RETRIES})...`
+          );
+          setTimeout(() => {
+            updateCourierWithRetry(query, params, retries + 1)
+              .then(resolve)
+              .catch(reject);
+          }, RETRY_DELAY);
+        } else {
+          console.error("Error updating courier:", err);
+          reject(err);
+        }
+      } else {
+        resolve(results);
+      }
+    });
+  });
+};
+
+app.put("/api/kurir/update/:id", (req, res) => {
+  const { id } = req.params;
+  const { nama, user_name, password, no_hp } = req.body;
+
+  const query =
+    "UPDATE kurir SET nama = ?, user_name = ?, password = ?, no_hp = ? WHERE id = ?";
+  const params = [nama, user_name, password, no_hp, id];
+
+  updateCourierWithRetry(query, params)
+    .then((results) => {
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ message: "Courier not found" });
+      }
+      res.json({ message: "Courier updated successfully" });
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ message: "Error updating courier" });
+    });
+});
+
+// Endpoint untuk menghapus kurir
+app.delete("/api/kurir/delete/:id", (req, res) => {
+  const { id } = req.params;
+  const query = "DELETE FROM kurir WHERE id = ?";
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error deleting courier" });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "Courier not found" });
+    }
+
+    res.json({ message: "Courier deleted successfully" });
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

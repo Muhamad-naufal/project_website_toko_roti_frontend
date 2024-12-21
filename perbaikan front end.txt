@@ -4,11 +4,7 @@ perbaikan front end user
 3. fungsikan sampai masuk ke database alamatnya
 
 perbaikan front end admin
-1. buat page kurir
-2. buat page tambah kurir
-3. buat page edit kurir
-4. fungsikan hapus kurir
-5. buat tabel data kurir
+1.
 
 perbaikan
 1.
