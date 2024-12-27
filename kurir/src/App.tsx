@@ -10,14 +10,9 @@ import Cookies from "js-cookie";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
-import Produk from "./pages/Produk";
 import Orderan from "./pages/Orderan";
 import Login from "./pages/Login";
-import AddProduct from "./pages/AddProduct";
-import EditProduct from "./pages/EditProduct";
-import AddCategory from "./pages/AddCategory";
-import CategoryList from "./pages/Category";
-import EditCategory from "./pages/EditCategory";
+import History from "./pages/History";
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -121,38 +116,12 @@ function RoutesContainer({ isAuthenticated }: { isAuthenticated: boolean }) {
         element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
       />
       <Route
-        path="/produk"
-        element={isAuthenticated ? <Produk /> : <Navigate to="/login" />}
-      />
-      <Route
-        path="/orderan"
+        path="/order"
         element={isAuthenticated ? <Orderan /> : <Navigate to="/login" />}
       />
       <Route
-        path="/add-product"
-        element={isAuthenticated ? <AddProduct /> : <Navigate to="/login" />}
-      />
-      <Route
-        path="/edit-product/:id"
-        element={
-          isAuthenticated ? (
-            <EditProduct categories={[]} />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
-      <Route
-        path="/add-category"
-        element={isAuthenticated ? <AddCategory /> : <Navigate to="/login" />}
-      />
-      <Route
-        path="/category"
-        element={isAuthenticated ? <CategoryList /> : <Navigate to="/login" />}
-      />
-      <Route
-        path="/edit-category/:id"
-        element={isAuthenticated ? <EditCategory /> : <Navigate to="/login" />}
+        path="/history"
+        element={isAuthenticated ? <History /> : <Navigate to="/login" />}
       />
     </Routes>
   );

@@ -1,10 +1,8 @@
-perbaikan front end user
-1. tambahkan inputan alamat di register
-2. tambahkan kolom alamat di tabel users
-3. fungsikan sampai masuk ke database alamatnya
+perbaikan front end User
+1.
 
 perbaikan front end admin
-1.
+1. di bagian orderan, bisa milih kurir
 
 perbaikan
 1.
@@ -12,4 +10,4 @@ perbaikan
 perbaikan front end kurir
 1. buatkan page orderan
 2. buatkan agar bisa ubah status
-3. masukkan tailwind config
+3. memunculkan orderan yang diberikan dari admin

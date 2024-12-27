@@ -10,6 +10,25 @@ const Orderan = () => {
     new Set()
   );
 
+  const [couriers, setCouriers] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchCouriers = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/kurir");
+        if (response.ok) {
+          const couriersData = await response.json();
+          setCouriers(couriersData);
+        } else {
+          setError("Gagal mengambil data kurir dari server.");
+        }
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Unknown error");
+      }
+    };
+
+    fetchCouriers();
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -75,21 +94,6 @@ const Orderan = () => {
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-600">Error: {error}</p>;
-
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800"; // Yellow background for Pending
-      case "Delivered":
-        return "bg-green-100 text-green-800"; // Green background for Delivered
-      case "Completed":
-        return "bg-blue-100 text-blue-800"; // Blue background for Completed
-      case "Canceled":
-        return "bg-red-100 text-red-800"; // Red background for Canceled
-      default:
-        return "bg-gray-100 text-gray-800"; // Default background for other statuses
-    }
-  };
 
   const handleStatusChange = (status: string) => {
     setSelectedStatuses((prevStatuses) => {
@@ -209,10 +213,8 @@ const Orderan = () => {
                   </h3>
                   {filteredOrders[orderDate][orderTime].map((order: any) => (
                     <div
-                      key={order.order_id}
-                      className={`border-2 rounded-xl overflow-hidden ${getStatusClass(
-                        order.status
-                      )} shadow-lg transform transition-all hover:scale-105 duration-300 ease-in-out`}
+                      key={order.id}
+                      className={`border-2 rounded-xl overflow-hidden shadow-lg transform transition-all hover:scale-105 duration-300 ease-in-out`}
                     >
                       <div className="p-6 bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors duration-300 ease-in-out">
                         <h4 className="text-lg font-semibold text-gray-800">
@@ -252,12 +254,127 @@ const Orderan = () => {
                           </ul>
 
                           <div className="mt-6">
-                            <h4 className="text-md font-medium text-gray-800">
-                              Status:
-                            </h4>
-                            <p className="text-lg text-gray-700">
-                              {order.status}
-                            </p>
+                            <div className="flex justify-between items-center">
+                              <h4 className="text-md font-medium text-gray-800">
+                                Status:
+                              </h4>
+                              <p className="text-lg text-gray-700">
+                                {order.status}
+                              </p>
+                            </div>
+                            <div className="flex justify-between items-center mt-4">
+                              <h4 className="text-md font-medium text-gray-800">
+                                Kurir:
+                              </h4>
+                              <div className="flex items-center space-x-4">
+                                {/* Dropdown untuk memilih kurir */}
+                                <select
+                                  className="p-2 border rounded"
+                                  value={order.id_kurir || ""}
+                                  onChange={async (e) => {
+                                    const newCourierId = e.target.value;
+                                    try {
+                                      const response = await fetch(
+                                        "http://localhost:5000/api/update-kurir",
+                                        {
+                                          method: "POST",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                          },
+                                          body: JSON.stringify({
+                                            orderId: order.id,
+                                            courierId: newCourierId,
+                                          }),
+                                        }
+                                      );
+
+                                      if (response.ok) {
+                                        console.log(
+                                          "Kurir berhasil diperbarui."
+                                        );
+                                        const updatedOrder = {
+                                          ...order,
+                                          id_kurir: newCourierId,
+                                        };
+                                        interface Order {
+                                          id: number;
+                                          user_name: string;
+                                          totalPrice: number;
+                                          items: OrderItem[];
+                                          status: string;
+                                          id_kurir?: number;
+                                          created_at: string;
+                                        }
+
+                                        interface OrderItem {
+                                          product_name: string;
+                                          quantity: number;
+                                          price: number;
+                                        }
+                                        interface OrderData {
+                                          [date: string]: {
+                                            [time: string]: Order[];
+                                          };
+                                        }
+
+                                        const setOrderDataWithTypes = (
+                                          setOrderData: React.Dispatch<
+                                            React.SetStateAction<OrderData>
+                                          >,
+                                          order: Order,
+                                          updatedOrder: Order
+                                        ) => {
+                                          setOrderData((prevOrderData) => {
+                                            const newOrderData: OrderData = {
+                                              ...prevOrderData,
+                                            };
+                                            Object.keys(newOrderData).forEach(
+                                              (dateKey) => {
+                                                Object.keys(
+                                                  newOrderData[dateKey]
+                                                ).forEach((timeKey) => {
+                                                  newOrderData[dateKey][
+                                                    timeKey
+                                                  ] = newOrderData[dateKey][
+                                                    timeKey
+                                                  ].map((o) =>
+                                                    o.id === order.id
+                                                      ? updatedOrder
+                                                      : o
+                                                  );
+                                                });
+                                              }
+                                            );
+                                            return newOrderData;
+                                          });
+                                        };
+
+                                        setOrderDataWithTypes(
+                                          setOrderData,
+                                          order,
+                                          updatedOrder
+                                        );
+                                      } else {
+                                        const error = await response.json();
+                                        console.error(
+                                          "Gagal memperbarui kurir:",
+                                          error
+                                        );
+                                      }
+                                    } catch (error) {
+                                      console.error("Error:", error);
+                                    }
+                                  }}
+                                >
+                                  <option value="">Pilih Kurir</option>
+                                  {couriers.map((courier) => (
+                                    <option key={courier.id} value={courier.id}>
+                                      {courier.nama}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -456,7 +456,6 @@ app.get("/api/user/count", (req, res) => {
 
 // Endpoint untuk mengambil jumlah produk
 app.get("/api/produk/count", (req, res) => {
-  console.log("Endpoint hit: /api/products/count");
   const query = "SELECT COUNT(*) AS count FROM products";
   db.query(query, (err, results) => {
     if (err) {
@@ -1023,6 +1022,218 @@ app.delete("/api/kurir/delete/:id", (req, res) => {
     }
 
     res.json({ message: "Courier deleted successfully" });
+  });
+});
+
+// Endpoint untuk memperbarui kurir order
+app.post("/api/update-kurir", (req, res) => {
+  const { orderId, courierId } = req.body;
+
+  if (!orderId || !courierId) {
+    return res
+      .status(400)
+      .json({ error: "Order ID dan Courier ID wajib diisi." });
+  }
+
+  const query = "UPDATE orders SET id_kurir = ? WHERE id = ?";
+  db.query(query, [courierId, orderId], (err, result) => {
+    if (err) {
+      console.error("Error updating courier:", err);
+      return res.status(500).json({ error: "Gagal memperbarui kurir." });
+    }
+
+    return res.status(200).json({ message: "Kurir berhasil diperbarui." });
+  });
+});
+
+// Endpoint untuk menampilkan nama kurir berdasarkan id_kurir di tabel orders
+app.get("/api/kurir-order/:id", (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+    SELECT kurir.nama
+    FROM orders
+    JOIN kurir ON orders.id_kurir = kurir.id
+    WHERE orders.id = ?
+  `;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Error fetching courier" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Courier not found" });
+    }
+
+    res.json(results[0]);
+  });
+});
+
+// Endpoint untuk menampilkan data orderan berdasarkan id_kurir
+app.get("/api/kurir/order/:id", (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+SELECT 
+  orders.id AS order_id, 
+  users.name AS user_name, 
+  users.Alamat AS user_address,
+  orders.total_price AS totalPrice, 
+  orders.status,
+  DATE_FORMAT(orders.created_at, '%Y-%m-%d') AS orderDate,
+  DATE_FORMAT(orders.created_at, '%H:%i') AS orderTime,
+  products.name AS product_name,
+  order_items.quantity,
+  order_items.price
+FROM orders
+JOIN users ON orders.user_id = users.id
+JOIN order_items ON orders.id = order_items.order_id
+JOIN products ON order_items.product_id = products.id
+WHERE orders.id_kurir = ?
+  AND orders.status IN ('pending', 'delivered')
+ORDER BY orders.created_at;
+  `;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Error fetching orders" });
+    }
+
+    const groupedData = results.reduce((acc, row) => {
+      const { orderDate, orderTime, ...orderDetails } = row;
+
+      if (!acc[orderDate]) acc[orderDate] = {};
+      if (!acc[orderDate][orderTime]) acc[orderDate][orderTime] = [];
+
+      const existingOrder = acc[orderDate][orderTime].find(
+        (order) => order.order_id === orderDetails.order_id
+      );
+
+      if (existingOrder) {
+        existingOrder.items.push({
+          product_name: row.product_name,
+          quantity: row.quantity,
+          price: row.price,
+        });
+      } else {
+        acc[orderDate][orderTime].push({
+          ...orderDetails,
+          items: [
+            {
+              product_name: row.product_name,
+              quantity: row.quantity,
+              price: row.price,
+            },
+          ],
+        });
+      }
+
+      return acc;
+    }, {});
+
+    res.json(groupedData);
+  });
+});
+
+// Endpoint untuk memperbarui status pesanan
+app.put("/api/orders/:orderId/status", (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+
+  console.log("Received status:", status); // Log status to debug
+  console.log("Received body:", req.body); // Log entire body to debug
+
+  // Validasi status
+  const validStatuses = ["Delivered", "Canceled", "Completed"];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+
+  const query = "UPDATE orders SET status = ? WHERE id = ?";
+  db.query(query, [status, orderId], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to update order status" });
+    } else {
+      res.json({ message: "Order status updated successfully" });
+    }
+  });
+});
+
+// Endpoint untuk menampilkan history pesanan berdasarkan id kurir
+app.get("/api/kurir/history/:id", (req, res) => {
+  const { id } = req.params;
+  const query = `
+    SELECT o.*, u.name AS user_name, u.alamat AS user_address, oi.quantity, o.total_price as totalPrice, p.name AS product_name 
+    FROM orders as o
+    JOIN users as u ON o.user_id = u.id
+    JOIN order_items as oi ON o.id = oi.order_id
+    JOIN products as p ON oi.product_id = p.id
+    WHERE id_kurir = ? 
+      AND (status = 'completed' OR status = 'canceled') 
+    ORDER BY created_at DESC
+  `;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching order history" });
+    }
+    res.json(results);
+  });
+});
+
+// Endpoint untuk menampilkan total order yang belum selesai
+app.get("/api/orders/total/canceled", (req, res) => {
+  const query =
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'canceled'";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching order total" });
+    }
+    res.json(results[0]);
+  });
+});
+
+// Endpoint untuk menampilkan total order yang selesai
+app.get("/api/orders/total/completed", (req, res) => {
+  const query =
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'completed'";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching order total" });
+    }
+    res.json(results[0]);
+  });
+});
+
+// Endpoint untuk menampilkan total order yang sedang dikirim
+app.get("/api/orders/total/delivered", (req, res) => {
+  const query =
+    "SELECT COUNT(*) AS count FROM orders WHERE status = 'delivered'";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching order total" });
+    }
+    res.json(results[0]);
+  });
+});
+
+// Endpoint untuk menampilkan total order yang belum dikirim
+app.get("/api/orders/total/pending", (req, res) => {
+  const query = "SELECT COUNT(*) AS count FROM orders WHERE status = 'pending'";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Error fetching order total" });
+    }
+    res.json(results[0]);
   });
 });
 

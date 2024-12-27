@@ -2,31 +2,24 @@ import { motion } from "framer-motion";
 import { FaUser, FaBox, FaShoppingCart } from "react-icons/fa";
 import { useState, useEffect } from "react";
 
-// Function to format numbers to IDR
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-  }).format(amount);
-};
-
 const Dashboard = () => {
-  // Dummy data for the chart
-  const [orderCount, setOrderCount] = useState(800);
-
   // Fetching data user count
-  const [userCount, setUserCount] = useState(0);
+  const [OrderCanceled, setOrderCanceled] = useState(0);
+  const [orderCompleted, setOrderCompleted] = useState(0);
+  const [orderPending, setOrderPending] = useState(0);
 
   // Fetching data user count
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/user/count"); // endpoint disesuaikan
+        const response = await fetch(
+          "http://localhost:5000/api/orders/total/canceled"
+        ); // endpoint disesuaikan
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setUserCount(data.count); // gunakan nama `count` agar konsisten
+        setOrderCanceled(data.count); // gunakan nama `count` agar konsisten
       } catch (error) {
         console.error("Error fetching user count:", error);
       }
@@ -35,56 +28,40 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // Fetching Product Count data
-  const [productCount, setProductCount] = useState(0);
+  // Fetching data order completed
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/produk/count");
+        const response = await fetch(
+          "http://localhost:5000/api/orders/total/completed"
+        ); // endpoint disesuaikan
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setProductCount(data.count);
+        setOrderCompleted(data.count); // gunakan nama `count` agar konsisten
       } catch (error) {
-        console.error("Error fetching product count:", error);
+        console.error("Error fetching user count:", error);
       }
     };
+
     fetchData();
   }, []);
 
-  // Fetching Order Count data
+  // Fetching pending order Count data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/order/count");
+        const response = await fetch(
+          "http://localhost:5000/api/orders/total/pending"
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setOrderCount(data.count);
+        setOrderPending(data.count);
       } catch (error) {
         console.error("Error fetching order count:", error);
-      }
-    };
-    fetchData();
-  }, []);
-
-  // Fetching Total Sales data
-  const [totalSales, setTotalSales] = useState(0);
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/sales/count");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log("Total Sales API Response:", data);
-        // Pastikan `totalSales` dikonversi ke angka jika perlu
-        setTotalSales(data.total_sales);
-      } catch (error) {
-        console.error("Error fetching total sales:", error);
       }
     };
     fetchData();
@@ -113,8 +90,8 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <FaUser className="text-3xl" />
             <div>
-              <h3 className="text-lg font-semibold">Users</h3>
-              <p className="text-2xl">{userCount}</p>
+              <h3 className="text-lg font-semibold">Order Canceled</h3>
+              <p className="text-2xl">{OrderCanceled}</p>
             </div>
           </div>
         </motion.div>
@@ -129,8 +106,8 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <FaBox className="text-3xl" />
             <div>
-              <h3 className="text-lg font-semibold">Products</h3>
-              <p className="text-2xl">{productCount}</p>
+              <h3 className="text-lg font-semibold">Order Completed</h3>
+              <p className="text-2xl">{orderCompleted}</p>
             </div>
           </div>
         </motion.div>
@@ -145,25 +122,12 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <FaShoppingCart className="text-3xl" />
             <div>
-              <h3 className="text-lg font-semibold">Orders</h3>
-              <p className="text-2xl">{orderCount}</p>
+              <h3 className="text-lg font-semibold">Orders Pending</h3>
+              <p className="text-2xl">{orderPending}</p>
             </div>
           </div>
         </motion.div>
       </div>
-
-      {/* Total Sales */}
-      <motion.div
-        className="bg-white p-6 rounded-lg shadow-lg"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">
-          Total Omset
-        </h3>
-        <p className="text-2xl font-bold">{formatCurrency(totalSales)}</p>
-      </motion.div>
     </div>
   );
 };
