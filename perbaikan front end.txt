@@ -2,12 +2,15 @@ perbaikan front end User
 1.
 
 perbaikan front end admin
-1. di bagian orderan, bisa milih kurir
+1. bagian order admin bisa ganti status dari pending ke delivered, namun setelah itu, otomatis sistem
+2. di bagian order, sistem otomatis memilih kurir yang tidak dalam perjalanan mengirimkan barang
+3. di bagian order, orderan yang completed tidak dimunculkan
 
 perbaikan
-1.
+1. button cancel ada di customer
+2. button cancel hanya ada saat pesanan masih pending, jika sudah deliver, sudah mati
+3. tambahkan proccess status di bagian admin
 
 perbaikan front end kurir
-1. buatkan page orderan
-2. buatkan agar bisa ubah status
-3. memunculkan orderan yang diberikan dari admin
+1. saat menerima orderan, munculkan notifikasi
+2. saat akan menyelesaikan pesanan, harus ada foto untuk bukti pengiriman sudah selesai

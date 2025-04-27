@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import React from "react";
-import { FaHome, FaBox, FaShoppingCart, FaUser } from "react-icons/fa";
+import { FaHome, FaBox, FaShoppingCart, FaUser, FaClock } from "react-icons/fa";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -11,6 +11,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
     { name: "Dashboard", icon: <FaHome />, link: "/dashboard" },
     { name: "Produk", icon: <FaBox />, link: "/produk" },
     { name: "Orderan", icon: <FaShoppingCart />, link: "/orderan" },
+    { name: "History Order", icon: <FaClock />, link: "/history" },
     { name: "Kategori", icon: <FaBox />, link: "/category" },
     { name: "Kurir", icon: <FaUser />, link: "/kurir" },
   ];

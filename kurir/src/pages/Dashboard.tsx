@@ -13,15 +13,18 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/orders/total/canceled"
-        ); // endpoint disesuaikan
+          "http://localhost:5000/api/orders/total/canceled",
+          {
+            credentials: "include", // Pastikan cookies dikirim
+          }
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setOrderCanceled(data.count); // gunakan nama `count` agar konsisten
+        setOrderCanceled(data.count);
       } catch (error) {
-        console.error("Error fetching user count:", error);
+        console.error("Error fetching order count:", error);
       }
     };
 
@@ -33,15 +36,18 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/orders/total/completed"
-        ); // endpoint disesuaikan
+          "http://localhost:5000/api/orders/total/completed",
+          {
+            credentials: "include", // Pastikan cookies dikirim
+          }
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setOrderCompleted(data.count); // gunakan nama `count` agar konsisten
+        setOrderCompleted(data.count);
       } catch (error) {
-        console.error("Error fetching user count:", error);
+        console.error("Error fetching order count:", error);
       }
     };
 
@@ -53,7 +59,10 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/orders/total/pending"
+          "http://localhost:5000/api/orders/total/delivered",
+          {
+            credentials: "include", // Pastikan cookies dikirim
+          }
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,6 +73,7 @@ const Dashboard = () => {
         console.error("Error fetching order count:", error);
       }
     };
+
     fetchData();
   }, []);
 

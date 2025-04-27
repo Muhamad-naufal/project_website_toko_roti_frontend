@@ -1,3 +1,71 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: "Courier New", monospace;
+  }
+
+  .printable {
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    font-size: 12px;
+    white-space: nowrap; /* Menghindari teks terpotong */
+    text-align: left;
+  }
+
+  .printable hr {
+    border: 0;
+    border-top: 1px dashed #000;
+    margin: 10px 0;
+  }
+
+  .printable h1,
+  .printable h2,
+  .printable p {
+    margin: 0;
+    padding: 0;
+  }
+
+  .printable .order-header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .printable .order-details {
+    margin-top: 10px;
+  }
+
+  .printable .order-total {
+    font-weight: bold;
+    margin-top: 10px;
+  }
+
+  .printable .status {
+    margin-top: 15px;
+  }
+
+  .printable .item {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+  }
+
+  .printable .item-name {
+    flex: 1;
+  }
+
+  .printable .item-quantity,
+  .printable .item-price {
+    text-align: right;
+  }
+
+  .printable .footer {
+    text-align: center;
+    margin-top: 20px;
+  }
+}

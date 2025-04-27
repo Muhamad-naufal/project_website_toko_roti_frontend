@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "../components/ui/button";
 
 const Order = () => {
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [groupedOrders, setGroupedOrders] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
@@ -81,7 +81,15 @@ const Order = () => {
                         className={`font-medium text-lg p-2 rounded-lg ${
                           order.status === "Delivered"
                             ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            : order.status === "Pending"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : order.status === "Process"
+                            ? "bg-blue-100 text-blue-700"
+                            : order.status === "Completed"
+                            ? "bg-purple-100 text-purple-700"
+                            : order.status === "Canceled"
+                            ? "bg-red-100 text-red-700"
+                            : ""
                         }`}
                       >
                         {order.status}

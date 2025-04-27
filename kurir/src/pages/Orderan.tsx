@@ -25,20 +25,22 @@ interface OrderData {
 
 const Orderan: React.FC = () => {
   const [orderData, setOrderData] = useState<OrderData>({});
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatuses] = useState<Set<string>>(new Set());
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const getCookie = (name: string) => {
-          const value = `; ${document.cookie}`;
+          const value = `${document.cookie}`;
           const parts = value.split(`; ${name}=`);
           if (parts.length === 2) return parts.pop()?.split(";").shift();
         };
 
-        const id_kurir = getCookie("kurir_id"); // Ambil ID kurir dari cookies
+        const id_kurir = getCookie("kurir_id");
         if (!id_kurir) {
           setError("ID kurir tidak ditemukan di cookies.");
           return;
@@ -60,215 +62,152 @@ const Orderan: React.FC = () => {
     fetchOrders();
   }, []);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+  const handleOpenModal = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setIsModalOpen(true);
   };
 
-  const handleStatusChange = async (
-    orderId: number,
-    newStatus: string,
-    orderDate: string,
-    orderTime: string
-  ) => {
-    console.log("Selected status:", newStatus); // Log the new status to confirm
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedImage(null);
+    setPreviewImage(null);
+    setSelectedOrderId(null);
+  };
 
-      if (response.ok) {
-        // handle success
-        window.location.reload(); // Reload the page to refresh the data
-      } else {
-        const errorData = await response.json(); // Get response data
-        console.log("Error details:", errorData); // Log error details
-        setError(
-          `Gagal memperbarui status: ${errorData.message || "Unknown error"}`
-        );
-        Swal.fire({
-          icon: "error",
-          title: "Gagal memperbarui status",
-          text: "Status tidak bisa dikembalikan",
-        }).then(() => {
-          window.location.reload(); // Reload the page to refresh the data
-        });
-      }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Unknown error");
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const filteredOrders = Object.keys(orderData || {}).reduce(
-    (acc, orderDate) => {
-      const filteredTimes = Object.keys(orderData[orderDate] || {}).reduce(
-        (timeAcc, orderTime) => {
-          const ordersAtTime = orderData[orderDate][orderTime];
-          if (!Array.isArray(ordersAtTime)) return timeAcc;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedImage || !selectedOrderId) return;
 
-          const filteredOrders = ordersAtTime.filter(
-            (order) =>
-              (order.user_name
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
-                order.items?.some((item) =>
-                  item.product_name
-                    ?.toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-                )) &&
-              (selectedStatuses.size === 0 ||
-                selectedStatuses.has(order.status))
-          );
+    const formData = new FormData();
+    formData.append("image", selectedImage); // Sesuaikan dengan backend
+    formData.append("order_id", selectedOrderId.toString()); // Tambahkan order_id
 
-          if (filteredOrders.length > 0) {
-            timeAcc[orderTime] = filteredOrders;
-          }
+    try {
+      const response = await fetch("http://localhost:5000/api/kurir/complete", {
+        method: "POST",
+        body: formData,
+      });
 
-          return timeAcc;
-        },
-        {} as Record<string, Order[]>
-      );
-
-      if (Object.keys(filteredTimes).length > 0) {
-        acc[orderDate] = filteredTimes;
+      if (response.ok) {
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil mengunggah bukti",
+          text: "Pesanan berhasil diselesaikan.",
+        });
+        handleCloseModal();
+        window.location.reload();
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal mengunggah bukti",
+          text: "Terjadi kesalahan, coba lagi nanti.",
+        });
       }
-
-      return acc;
-    },
-    {} as OrderData
-  );
-
-  if (error) {
-    return <p className="text-red-500 text-lg">{error}</p>;
-  }
-
-  if (Object.keys(orderData || {}).length === 0) {
-    return (
-      <p className="text-gray-500 text-lg text-center mt-10">
-        Tidak ada data order ditemukan.
-      </p>
-    );
-  }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal mengunggah bukti",
+        text: "Terjadi kesalahan, coba lagi nanti.",
+      });
+    }
+  };
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
-      <motion.h1
-        className="text-4xl font-extrabold text-center text-gray-800 mb-8"
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        Orderan
-      </motion.h1>
-      <motion.div
-        className="flex justify-center mb-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        <input
-          type="text"
-          placeholder="Cari berdasarkan nama atau produk..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="border border-gray-300 rounded-md shadow-sm p-3 w-full max-w-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-        />
-      </motion.div>
-      <div className="space-y-8">
-        {Object.keys(filteredOrders).map((orderDate) => (
-          <motion.div
-            key={orderDate}
-            className="bg-white rounded-lg shadow-lg p-6 border border-gray-200"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-              {orderDate}
-            </h2>
-            {Object.keys(filteredOrders[orderDate]).map((orderTime) => (
-              <div key={orderTime} className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-600">
-                  {orderTime}
-                </h3>
-                <ul className="space-y-6">
-                  {filteredOrders[orderDate][orderTime].map((order) => (
-                    <motion.li
-                      key={order.order_id}
-                      className="bg-gray-50 border rounded-lg p-4 shadow-sm hover:shadow-md transition flex flex-col gap-4"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                          <p className="text-gray-800">
-                            <strong>Nama:</strong> {order.user_name}
-                          </p>
-                          <p className="text-gray-800">
-                            <strong>Alamat:</strong> {order.user_address}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <label
-                            htmlFor={`status-${order.order_id}`}
-                            className="text-sm text-gray-600"
-                          >
-                            <strong>Status:</strong>
-                          </label>
-                          <select
-                            id={`status-${order.order_id}`}
-                            value={order.status}
-                            onChange={(e) =>
-                              handleStatusChange(
-                                order.order_id,
-                                e.target.value,
-                                orderDate,
-                                orderTime
-                              )
-                            }
-                            className="border rounded-md px-3 py-1.5 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Canceled">Canceled</option>
-                            <option value="Completed">Completed</option>
-                          </select>
-                        </div>
-                      </div>
-                      <ul className="divide-y divide-gray-200">
-                        {order.items.map((item, index) => (
-                          <li
-                            key={index}
-                            className="py-2 flex justify-between text-gray-700 text-sm"
-                          >
-                            <span>
-                              {item.product_name} x{item.quantity}
-                            </span>
-                            <span className="font-semibold">
-                              Rp{item.price.toLocaleString()}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="text-gray-800 font-semibold mt-4 text-right">
-                        <strong>Total:</strong> Rp
-                        {order.totalPrice.toLocaleString()}
-                      </p>
-                    </motion.li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </motion.div>
-        ))}
+      {Object.keys(orderData).map((orderDate) => (
+        <div key={orderDate} className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-2xl font-semibold mb-4">{orderDate}</h2>
+          {Object.keys(orderData[orderDate]).map((orderTime) => (
+            <div key={orderTime}>
+              <h3 className="text-lg font-medium mb-2">{orderTime}</h3>
+              {orderData[orderDate][orderTime].map((order) => (
+                <div
+                  key={order.order_id}
+                  className="p-4 border rounded-lg mb-4"
+                >
+                  <p>
+                    <strong>Nama:</strong> {order.user_name}
+                  </p>
+                  <p>
+                    <strong>Alamat:</strong> {order.user_address}
+                  </p>
+                  <button
+                    onClick={() => handleOpenModal(order.order_id)}
+                    className="mt-2 bg-indigo-500 text-white px-4 py-2 rounded-md shadow-lg hover:bg-indigo-600 transition"
+                  >
+                    Selesaikan Pesanan
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ))}
+      <div className="bg-gray-100 min-h-screen p-8">
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md"
+            >
+              <h2 className="text-xl font-bold mb-4 text-gray-700">
+                Upload Foto
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <label className="w-full border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-gray-100 transition">
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt="Preview"
+                      className="w-full rounded-md shadow-md"
+                    />
+                  ) : (
+                    <div className="text-gray-500">
+                      Klik untuk mengunggah foto
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+                <div className="flex justify-end mt-4 space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md shadow-md hover:bg-gray-600 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md shadow-md hover:bg-blue-600 transition"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
       </div>
+      );
     </div>
   );
 };

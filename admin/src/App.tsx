@@ -21,6 +21,7 @@ import EditCategory from "./pages/EditCategory";
 import Kurir from "./pages/Kurir";
 import AddKurir from "./pages/AddKurir";
 import EditKurir from "./pages/EditKurir";
+import History from "./pages/History";
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -168,6 +169,10 @@ function RoutesContainer({ isAuthenticated }: { isAuthenticated: boolean }) {
       <Route
         path="/edit-kurir/:id"
         element={isAuthenticated ? <EditKurir /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/history"
+        element={isAuthenticated ? <History /> : <Navigate to="/login" />}
       />
     </Routes>
   );
