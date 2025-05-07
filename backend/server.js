@@ -49,7 +49,7 @@ const db = mysql.createPool({
   host: "localhost",
   user: "root",
   password: "",
-  database: "toko_roti",
+  database: "toko_roti_1",
   waitForConnections: true, // Wait for available connections if all are in use
   connectionLimit: 10, // Limit the number of connections in the pool
   queueLimit: 0, // No limit for queueing requests
@@ -590,6 +590,7 @@ app.get("/api/order/all-completed", async (req, res) => {
         total_price,
         status,
         created_at,
+        bukti, // Menambahkan bukti
       } = row;
 
       if (!acc[order_id]) {
@@ -599,6 +600,7 @@ app.get("/api/order/all-completed", async (req, res) => {
           totalPrice: total_price,
           status,
           items: [],
+          bukti, // Menyimpan bukti
           created_at,
         };
       }

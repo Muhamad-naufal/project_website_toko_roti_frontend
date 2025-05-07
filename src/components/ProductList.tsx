@@ -56,9 +56,10 @@ const ProductList: React.FC = () => {
       try {
         const response = await fetch("http://localhost:5000/api/categories");
         const data = await response.json();
-        const cleanedCategories = data.map((category: string) =>
-          category.trim().replace(/['"]/g, "")
-        );
+        const cleanedCategories = data
+          .map((category: any) => category?.name?.trim().replace(/['"]/g, ""))
+          .filter(Boolean); // buang hasil undefined/null
+
         setCategories(["All", ...cleanedCategories]);
       } catch (error) {
         console.error("Error fetching categories:", error);
